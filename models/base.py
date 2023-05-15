@@ -1,2 +1,8 @@
 from config.settings import Base
-from test import Test
+from models.models_ import (
+    BotType,
+    Bot,
+    BotParametersType,
+    BotParametersValue,
+    Stock
+)

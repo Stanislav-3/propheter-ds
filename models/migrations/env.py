@@ -1,8 +1,7 @@
-import sys
 # needs to be there because imports from custom packages (e.g. config)
 # not working, because it's trying to import virtual environment
+import sys
 sys.path = ['', '..'] + sys.path[1:]
-
 
 from logging.config import fileConfig
 
