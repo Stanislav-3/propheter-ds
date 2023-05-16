@@ -29,6 +29,8 @@ class Bot(Base):
 
     id = Column(Integer, primary_key=True, index=True, unique=True)
 
+    stock_id = Column(ForeignKey('Stocks.id'))
+
     name = Column(String(100))
     description = Column(Text())
 
@@ -93,8 +95,8 @@ class Stock(Base):
     __tablename__ = 'Stocks'
 
     id = Column(Integer, primary_key=True, index=True, unique=True)
-    name = Column(String(32))
 
+    name = Column(String(32))
     dates = Column(DateTime())
     low = Column(DECIMAL(precision=12))
     high = Column(DECIMAL(precision=12))
