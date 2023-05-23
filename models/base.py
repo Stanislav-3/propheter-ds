@@ -4,5 +4,7 @@ from models.models_ import (
     Bot,
     BotParametersType,
     BotParametersValue,
-    Stock
+    Stock,
+    DataType,
+    Key
 )

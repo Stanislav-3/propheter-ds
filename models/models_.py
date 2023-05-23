@@ -30,6 +30,8 @@ class Bot(Base):
     id = Column(Integer, primary_key=True, index=True, unique=True)
 
     stock_id = Column(ForeignKey('Stocks.id'))
+    bot_type_id = Column(ForeignKey('BotTypes.id'))
+    key_id = Column(ForeignKey('Keys.id'))
 
     name = Column(String(100))
     description = Column(Text())
@@ -44,6 +46,21 @@ class Bot(Base):
         return f'id={self.id}, name={self.name}'
 
 
+class DataType(Base):
+    """
+    DataTypes of model parameters
+    """
+
+    __tablename__ = 'DataTypes'
+
+    id = Column(Integer, primary_key=True, index=True, unique=True)
+
+    type = Column(String(20))
+
+    def __repr__(self):
+        return f'id={id}, type={self.type}'
+
+
 class BotParametersType(Base):
     """
     Types of model parameters
@@ -54,9 +71,9 @@ class BotParametersType(Base):
     id = Column(Integer, primary_key=True, index=True, unique=True)
 
     bot_type_id = Column(ForeignKey('BotTypes.id'))
+    type_id = Column(ForeignKey('DataTypes.id'))
 
     name = Column(String(100))
-    type = Column(String(20))
 
     def __repr__(self):
         return f'id={id}, name={self.name}, type={self.type}'
@@ -109,3 +126,19 @@ class Stock(Base):
 
     def __str__(self):
         return f'id={self.id}, name={self.name}'
+
+
+class Key(Base):
+    """
+    Stocks data
+    """
+
+    __tablename__ = 'Keys'
+
+    id = Column(Integer, primary_key=True, index=True, unique=True)
+
+    api_key = Column(String(100))
+    secret_key = Column(String(100))
+
+    def __repr__(self):
+        return f'id={self.id}'

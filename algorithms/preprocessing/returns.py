@@ -13,3 +13,12 @@ def get_returns(prices: Iterable, remove_first: bool = True) -> np.array:
     return pd.Series(prices).pct_change()[start_idx:]
 
 
+def from_log_returns_to_factor(log_returns: Iterable) -> np.float64:
+    return np.prod(1 + np.array(log_returns))
+
+
+def from_returns_to_factor(returns: Iterable) -> np.float64:
+    return np.exp(np.sum(returns))
+
+
+print(from_log_returns_to_factor([1, 2, 3]))
