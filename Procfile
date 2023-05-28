@@ -1,1 +1,1 @@
-web: gunicorn config.main:app
+uvicorn main:app --reload
