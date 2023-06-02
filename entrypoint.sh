@@ -1,0 +1,1 @@
+uvicorn config.main:app --reload --workers 1
