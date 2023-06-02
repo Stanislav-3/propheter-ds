@@ -1,10 +1,16 @@
-from flask import Flask
+import asyncio
 from api.helloworld import hello_world
+from services.binance import BinanceAgent
+from typing import Union
+from fastapi import FastAPI
+app = FastAPI()
 
 
-app = Flask(__name__)
-app.add_url_rule('/', view_func=hello_world, methods=['GET'])
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
 
-
-if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5000)
+@app.post("/api/ticks/")
+async def new_ticks():
+    print('INFO: tick-tick')
+    return {"Yas": "Gimme those ticks"}
