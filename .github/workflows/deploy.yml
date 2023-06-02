@@ -23,10 +23,11 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         script: |
+          pkill gunicorn
           source ~/.ssh/activate_key.sh
           cd /var/www/propheter-ds/
           git pull origin master
           source venv/bin/activate
           pip install --upgrade pip
           pip install -r requirements.txt
-          bash entrypoint.sh
+          gunicorn config.main:app -w 4 -k uvicorn.workers.UvicornWorker --daemon
