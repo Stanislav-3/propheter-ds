@@ -1,1 +1,1 @@
-uvicorn config.main:app --reload --workers 1
+gunicorn example:app -w 4 -k uvicorn.workers.UvicornWorker
