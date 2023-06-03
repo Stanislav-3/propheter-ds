@@ -17,7 +17,7 @@ class BotAction(Enum):
     DO_NOTHING = 'Do nothing'
 
 
-class BotMode(Enum):
+class BotMoneyMode(Enum):
     REAL = 'Real'
     PAPER = 'Paper'
     NOT_CONFIGURED = 'Not configured'
@@ -27,10 +27,16 @@ class BotEvaluationResult(NamedTuple):
     action: BotAction
 
 
+class ReturnType(Enum):
+    LOG_RETURN = 'Log_return'
+    RETURN = 'Return'
+
+
 class BotBase(ABC):
     def __init__(self):
         self.status = BotStatus.STOPPED
-        self.mode = BotMode.NOT_CONFIGURED
+        self.money_mode = BotMoneyMode.NOT_CONFIGURED
+        self.return_type = ReturnType.LOG_RETURN
 
     @abstractmethod
     def start(self) -> None:
@@ -45,7 +51,7 @@ class BotBase(ABC):
         if self.status != BotStatus.RUNNING:
             raise BotIsNotRunningError(f'You cannot use bot "{self.__class__.__name__}"'
                                        f'because it is still not configured')
-        if self.mode == BotMode.NOT_CONFIGURED:
+        if self.money_mode == BotMoneyMode.NOT_CONFIGURED:
             raise BotModeIsNotConfiguredError(f'Mode of bot "{self.__class__.__name__}" is not configured')
 
         return BotEvaluationResult(action=BotAction.DO_NOTHING)
@@ -53,5 +59,5 @@ class BotBase(ABC):
     def set_configured(self):
         self.status = BotStatus.RUNNING
 
-        if self.mode == BotMode.NOT_CONFIGURED:
+        if self.money_mode == BotMoneyMode.NOT_CONFIGURED:
             raise BotModeIsNotConfiguredError(f'Mode of bot "{self.__class__.__name__}" is not configured')

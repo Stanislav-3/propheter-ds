@@ -6,3 +6,8 @@ class BotIsNotRunningError(Exception):
 class BotModeIsNotConfiguredError(Exception):
     def __init__(self, message):
         super().__init__(message)
+
+
+class BotConfigurationError():
+    def __init__(self, message):
+        super().__init__(message)
