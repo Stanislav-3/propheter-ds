@@ -1,5 +1,8 @@
-from sqlalchemy import ForeignKey, Column, String, Integer, CHAR, Text, LargeBinary, DateTime, DECIMAL
+from sqlalchemy import ForeignKey, Column, String, Integer, CHAR, Text, LargeBinary, DateTime, DECIMAL, Enum
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy_json import mutable_json_type
 from config.settings import Base
+from algorithms.bots.base import BotAction
 
 
 class BotType(Base):
@@ -12,11 +15,11 @@ class BotType(Base):
 
     id = Column(Integer, primary_key=True, index=True, unique=True)
 
-    name = Column(String(100))
-    description = Column(Text())
+    name = Column(String(32))
+    parameters_schema = Column(mutable_json_type(dbtype=JSONB, nested=True))
 
     def __repr__(self):
-        return f'id={self.id}, name={self.name}'
+        return f'id={self.id}, name={self.name}, parameters_schema={self.parameters_schema}'
 
 
 class Bot(Base):
@@ -29,79 +32,23 @@ class Bot(Base):
 
     id = Column(Integer, primary_key=True, index=True, unique=True)
 
-    stock_id = Column(ForeignKey('Stocks.id'))
-    bot_type_id = Column(ForeignKey('BotTypes.id'))
-    key_id = Column(ForeignKey('Keys.id'))
+    stock_id = Column(ForeignKey('Stocks.id', ondelete='CASCADE'))
+    bot_type_id = Column(ForeignKey('BotTypes.id', ondelete='CASCADE'))
+    key_id = Column(ForeignKey('Keys.id', ondelete='CASCADE'))
 
-    name = Column(String(100))
-    description = Column(Text())
-
-    some_general_attribute = Column(Text())
+    parameters = Column(mutable_json_type(dbtype=JSONB, nested=True))
+    max_money_to_invest = Column(DECIMAL(precision=10, scale=2))
+    max_level = Column(DECIMAL(precision=8, scale=2))
+    min_level = Column(DECIMAL(precision=8, scale=2))
 
     def __repr__(self):
-        return f'id={self.id}, name={self.name}, ' \
-               f'some_general_attribute={self.some_general_attribute}'
+        return f'id={self.id}, stock_id={self.stock_id}, bot_type_id={self.bot_type_id}, key_id={self.key_id}, ' \
+               f'parameters={self.parameters}, max_money_to_invest={self.max_money_to_invest}, ' \
+               f'max_level={self.max_level}, min_level={self.min_level}'
 
     def __str__(self):
-        return f'id={self.id}, name={self.name}'
-
-
-class DataType(Base):
-    """
-    DataTypes of model parameters
-    """
-
-    __tablename__ = 'DataTypes'
-
-    id = Column(Integer, primary_key=True, index=True, unique=True)
-
-    type = Column(String(20))
-
-    def __repr__(self):
-        return f'id={id}, type={self.type}'
-
-
-class BotParametersType(Base):
-    """
-    Types of model parameters
-    """
-
-    __tablename__ = 'BotParametersTypes'
-
-    id = Column(Integer, primary_key=True, index=True, unique=True)
-
-    bot_type_id = Column(ForeignKey('BotTypes.id'))
-    type_id = Column(ForeignKey('DataTypes.id'))
-
-    name = Column(String(100))
-
-    def __repr__(self):
-        return f'id={id}, name={self.name}, type={self.type}'
-
-    def __str__(self):
-        return f'{self.name}: {self.type}'
-
-
-class BotParametersValue(Base):
-    """
-    Values of model parameters
-    """
-
-    __tablename__ = 'BotParametersValues'
-
-    id = Column(Integer, primary_key=True, index=True, unique=True)
-
-    bot_id = Column(ForeignKey('Bots.id'))
-    bot_parameters_type_id = Column(ForeignKey('BotParametersTypes.id'))
-
-    value = Column(LargeBinary())
-
-    def __repr__(self):
-        return f'id={self.id}, bot_id={self.bot_id}, ' \
-               f'bot_parameters_type_id={self.bot_parameters_type_id}, value={self.value}'
-
-    def __str__(self):
-        return f'id={self.id}, value={self.value}'
+        return f'id={self.id}, stock_id={self.stock_id}, bot_type_id={self.bot_type_id}, key_id={self.key_id}, ' \
+               f'parameters={self.parameters}'
 
 
 class Stock(Base):
@@ -113,32 +60,69 @@ class Stock(Base):
 
     id = Column(Integer, primary_key=True, index=True, unique=True)
 
-    name = Column(String(32))
-    dates = Column(DateTime())
-    low = Column(DECIMAL(precision=12))
-    high = Column(DECIMAL(precision=12))
-    open = Column(DECIMAL(precision=12))
-    close = Column(DECIMAL(precision=12))
-    volume = Column(DECIMAL(precision=8))
+    name = Column(String(16))
 
     def __repr__(self):
         return f'id={self.id}, name={self.name}'
 
+
+class Kline(Base):
+    """
+    Stocks data
+    """
+
+    __tablename__ = 'Klines'
+
+    id = Column(Integer, primary_key=True, index=True, unique=True)
+
+    stock_id = Column(ForeignKey('Stocks.id', ondelete='CASCADE'))
+
+    date = Column(DateTime())
+    low = Column(DECIMAL(precision=8, scale=2))
+    high = Column(DECIMAL(precision=8, scale=2))
+    open = Column(DECIMAL(precision=8, scale=2))
+    close = Column(DECIMAL(precision=8, scale=2))
+    volume = Column(DECIMAL(precision=14, scale=2))
+
+    def __repr__(self):
+        return f'id={self.id}, stock_id={self.stock_id}, date={self.date}, low={self.low}, high={self.high}, ' \
+               f'open={self.open}, close={self.close}, volume={self.volume}'
+
     def __str__(self):
-        return f'id={self.id}, name={self.name}'
+        return f'id={self.id}, stock_id={self.stock_id}'
 
 
 class Key(Base):
     """
-    Stocks data
+    Keys for exchange
     """
 
     __tablename__ = 'Keys'
 
     id = Column(Integer, primary_key=True, index=True, unique=True)
 
-    api_key = Column(String(100))
-    secret_key = Column(String(100))
+    api_key = Column(String(64))
+    secret_key = Column(String(64))
 
     def __repr__(self):
+        return f'id={self.id}, api_key={self.api_key}, secret_key={self.secret_key}'
+
+    def __str__(self):
         return f'id={self.id}'
+
+
+class Transaction(Base):
+    """
+    Transaction info
+    """
+
+    __tablename__ = 'Transactions'
+
+    id = Column(Integer, primary_key=True, index=True, unique=True)
+
+    bot_id = Column(ForeignKey('Bots.id', ondelete='CASCADE'))
+
+    date = Column(DateTime())
+    price = Column(DECIMAL(precision=8, scale=2))
+    amount = Column(DECIMAL(precision=10, scale=2))
+    type = Column(Enum(BotAction))
