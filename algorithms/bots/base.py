@@ -37,6 +37,7 @@ class BotBase(ABC):
         self.status = BotStatus.STOPPED
         self.money_mode = BotMoneyMode.NOT_CONFIGURED
         self.return_type = ReturnType.LOG_RETURN
+        self.hold_asset = False
 
     @abstractmethod
     def start(self) -> None:
@@ -47,7 +48,7 @@ class BotBase(ABC):
         self.status = BotStatus.STOPPED
 
     @abstractmethod
-    def evaluate(self) -> BotEvaluationResult:
+    def step(self, new_price) -> BotEvaluationResult:
         if self.status != BotStatus.RUNNING:
             raise BotIsNotRunningError(f'You cannot use bot "{self.__class__.__name__}"'
                                        f'because it is still not configured')

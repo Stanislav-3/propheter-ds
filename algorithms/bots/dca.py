@@ -11,8 +11,8 @@ class SimpleBot(BotBase):
     def stop(self) -> None:
         super().stop()
 
-    def evaluate(self) -> BotEvaluationResult:
-        return super().evaluate()
+    def step(self) -> BotEvaluationResult:
+        return super().step()
 
 
 s = SimpleBot()
