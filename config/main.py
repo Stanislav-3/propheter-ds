@@ -10,7 +10,9 @@ app = FastAPI()
 def read_root():
     return {"Hello": "World"}
 
+
 @app.post("/api/ticks/")
-async def new_ticks():
+async def new_ticks(request):
     print('INFO: tick-tick')
+    print('request: ', request)
     return {"Yas": "Gimme those ticks"}
