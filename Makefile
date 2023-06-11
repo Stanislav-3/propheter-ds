@@ -6,3 +6,9 @@ migrate:
 
 dump:
 	pip freeze > requirements.txt
+
+run:
+	uvicorn config.main:app --reload
+
+set_pythonpath:
+	export PYTHONPATH="$PWD"

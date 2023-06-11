@@ -11,7 +11,7 @@ from algorithms.preprocessing.returns import (
 
 class ScoreDataFrameSchema(pa.DataFrameModel):
     Price: pa.typing.Series[float]
-    LogReturn: pa.typing.Series[float | np.nan]
+    LogReturn: pa.typing.Series[float or np.nan]
 
 
 class SMAParameters(NamedTuple):
@@ -53,7 +53,7 @@ class TrendFollowingBot(BotBase):
         super().start()
 
         # TODO: get prices from db or via request
-        prices = []
+        prices = [float(i) for i in range(150)]
 
         self.last_slow_average = np.mean(prices[-self.slow_window:])
         self.last_fast_average = np.mean(prices[-self.fast_window:])
