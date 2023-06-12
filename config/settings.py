@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import dialect
+from typing import Generator
 
 
 load_dotenv(find_dotenv('.env', raise_error_if_not_found=True))
@@ -20,11 +21,21 @@ API_KEY = os.getenv('API_KEY')
 API_SECRET = os.getenv('API_SECRET')
 
 
-# db stuff
+# Create an engine
 engine = create_engine(DATABASE_URI)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-# engine = create_engine(
-#     DATABASE_URI, connect_args={"check_same_thread": False}
-# )
-# database = databases.Database(SQLALCHEMY_DATABASE_URL)
+
+# Create a session factory
+SessionLocal = sessionmaker(bind=engine)
+
+
+# Function to get a new session
+def get_db() -> Generator:
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
 Base: DeclarativeMeta = declarative_base()
+
