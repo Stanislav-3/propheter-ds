@@ -32,5 +32,3 @@ class Pool:
     def run_bots(self, stock_name: str):
         # TODO: THINK ABOUT BOTS IN TERMS OF PARALLELISM
         bots = self.stock_bots_mapping[stock_name]
-
-        pass
