@@ -29,6 +29,8 @@ class Pool:
         if len(self.stock_bots_mapping[stock_name]) == 0:
             del self.stock_bots_mapping[stock_name]
 
-    def run_bots(self, stock_name):
+    def run_bots(self, stock_name: str):
         # TODO: THINK ABOUT BOTS IN TERMS OF PARALLELISM
+        bots = self.stock_bots_mapping[stock_name]
+
         pass
