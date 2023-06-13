@@ -3,7 +3,7 @@ import pandas as pd
 import pandera as pa
 from typing import Sequence, NamedTuple
 
-from base import BotBase, BotEvaluationResult, BotAction, ReturnType
+from algorithms.bots.base import BotBase, BotEvaluationResult, BotAction, ReturnType
 from algorithms.preprocessing.returns import (
     get_log_returns, get_returns, from_log_returns_to_factor, from_returns_to_factor
 )
