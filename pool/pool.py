@@ -1,5 +1,6 @@
 from exceptions.pool_exceptions import PoolExistsError
 from algorithms.bots.base import BotBase
+from algorithms.bots.trend_following import TrendFollowingBot
 
 
 # TODO: make a better name instead of stock (cause we got stock-to-stock relations)
@@ -33,7 +34,7 @@ class Pool:
         # TODO: THINK ABOUT BOTS IN TERMS OF PARALLELISM
         bots = self.stock_bots_mapping[stock_name]
 
-    def get_bot(self, bot_id: int) -> BotBase or None:
+    def get_bot(self, bot_id: int) -> None or TrendFollowingBot:
         bots_lists = self.stock_bots_mapping.values()
 
         for bots in bots_lists:

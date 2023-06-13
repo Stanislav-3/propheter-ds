@@ -20,8 +20,27 @@ async def start_bot(bot_id: int):
 
 
 @bot_router.post("/stop/{bot_id}")
-async def stop_bot(bot_id: int, pool: Pool = Depends(get_pool)):
-    return {}
+async def stop_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = Depends(get_db)):
+    errors_detail = []
+    errors_detail_separator = '\n'
+
+    bot: Bot = db.query(Bot).get(bot_id)
+    try:
+        bot.is_active = False
+        db.commit()
+    except UnmappedInstanceError:
+        errors_detail.append(f'Bot with id={bot_id} is not found in the database')
+
+    bot = pool.get_bot(bot_id)
+    if bot:
+        bot.stop()
+    else:
+        errors_detail.append(f'Bot with id={bot_id} is not found in the pool')
+
+    if errors_detail:
+        raise HTTPException(404, detail=errors_detail_separator.join(errors_detail))
+
+    return {'message': f'Bot with id={bot_id} is successfully stopped'}
 
 
 # TODO: async session for sqlalchemy?
