@@ -3,7 +3,7 @@ import pandas as pd
 import pandera as pa
 from typing import Sequence, NamedTuple
 
-from algorithms.bots.base import BotBase, BotEvaluationResult, BotAction, ReturnType
+from algorithms.bots.base import BotBase, BotEvaluationResult, BotAction, ReturnType, BotMoneyMode
 from algorithms.preprocessing.returns import (
     get_log_returns, get_returns, from_log_returns_to_factor, from_returns_to_factor
 )
@@ -21,8 +21,13 @@ class SMAParameters(NamedTuple):
 
 # TODO: add option to use exp smoothing instead of SMA's
 class TrendFollowingBot(BotBase):
-    def __init__(self, prices: Sequence, slow_sma: int = None, fast_sma: int = None):
+    def __init__(self, stock: str, max_level: float, min_level: float,
+                 money_mode: BotMoneyMode = None, return_type: ReturnType = None,
+                 slow_sma: int = None, fast_sma: int = None):
         super().__init__()
+
+        # todo make an request
+        prices = []
 
         self.last_slow_average = None
         self.last_fast_average = None
@@ -93,6 +98,7 @@ class TrendFollowingBot(BotBase):
         else:
             raise Exception(f'Unknown return type: {self.return_type.name}')
 
+    # todo: do it in separate process
     def search_parameters(self, prices: Sequence,
                           fast_min: int, fast_max: int, slow_max: int, fast_slow_min_delta: int) -> SMAParameters:
         best_fast, best_slow = None, None

@@ -38,4 +38,3 @@ def get_db() -> Generator:
 
 
 Base: DeclarativeMeta = declarative_base()
-

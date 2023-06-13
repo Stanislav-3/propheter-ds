@@ -32,6 +32,7 @@ class ReturnType(Enum):
     RETURN = 'Return'
 
 
+# TODO: ADD RECONFIGURATION
 class BotBase(ABC):
     def __init__(self):
         self.status = BotStatus.STOPPED

@@ -1,7 +1,7 @@
 from algorithms.bots.base import BotBase, BotEvaluationResult
 
 
-class DCABot(BotBase):
+class ReinforcementBot(BotBase):
     def __init__(self):
         super().__init__()
 
