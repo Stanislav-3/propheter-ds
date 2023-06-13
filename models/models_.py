@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Column, String, Integer, CHAR, Text, LargeBinary, DateTime, DECIMAL, Enum
+from sqlalchemy import ForeignKey, Column, String, Integer, CHAR, Text, LargeBinary, DateTime, DECIMAL, Enum, Boolean
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy_json import mutable_json_type
 from config.settings import Base
@@ -36,6 +36,7 @@ class Bot(Base):
     bot_type_id = Column(ForeignKey('BotTypes.id', ondelete='CASCADE'))
     key_id = Column(ForeignKey('Keys.id', ondelete='CASCADE'))
 
+    is_active = Column(Boolean())
     parameters = Column(mutable_json_type(dbtype=JSONB, nested=True))
     max_money_to_invest = Column(DECIMAL(precision=10, scale=2))
     max_level = Column(DECIMAL(precision=8, scale=2))
