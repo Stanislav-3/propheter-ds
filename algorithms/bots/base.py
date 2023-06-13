@@ -38,6 +38,7 @@ class BotBase(ABC):
         self.money_mode = BotMoneyMode.NOT_CONFIGURED
         self.return_type = ReturnType.LOG_RETURN
         self.hold_asset = False
+        self.id = None
 
     @abstractmethod
     def start(self) -> None:
