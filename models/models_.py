@@ -34,7 +34,7 @@ class Bot(Base):
 
     stock_id = Column(ForeignKey('Stocks.id', ondelete='CASCADE'))
     bot_type_id = Column(ForeignKey('BotTypes.id', ondelete='CASCADE'))
-    key_id = Column(ForeignKey('Keys.id', ondelete='CASCADE'))
+    key_id = Column(ForeignKey('Keys.id', ondelete='CASCADE'), nullable=True)
 
     is_active = Column(Boolean())
     parameters = Column(mutable_json_type(dbtype=JSONB, nested=True))
@@ -61,7 +61,7 @@ class Stock(Base):
 
     id = Column(Integer, primary_key=True, index=True, unique=True)
 
-    name = Column(String(16))
+    name = Column(String(16), unique=True)
 
     def __repr__(self):
         return f'id={self.id}, name={self.name}'

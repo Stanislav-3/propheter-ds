@@ -21,7 +21,7 @@ class SMAParameters(NamedTuple):
 
 # TODO: add option to use exp smoothing instead of SMA's
 class TrendFollowingBot(BotBase):
-    def __init__(self, stock: str, max_level: float, min_level: float,
+    def __init__(self, stock: str, max_level: float, min_level: float, max_money_to_invest: float, key_id: int,
                  money_mode: BotMoneyMode = None, return_type: ReturnType = None,
                  slow_sma: int = None, fast_sma: int = None):
         super().__init__()
