@@ -1,8 +1,10 @@
 from sqlalchemy import ForeignKey, Column, String, Integer, CHAR, Text, LargeBinary, DateTime, DECIMAL, Enum, Boolean
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy_json import mutable_json_type
+
 from config.settings import Base
 from algorithms.bots.base import BotAction
+from algorithms.bots.base import BotMoneyMode, ReturnType
 
 
 class BotType(Base):
@@ -41,6 +43,8 @@ class Bot(Base):
     max_money_to_invest = Column(DECIMAL(precision=10, scale=2))
     max_level = Column(DECIMAL(precision=8, scale=2))
     min_level = Column(DECIMAL(precision=8, scale=2))
+    money_mode = Column(Enum(BotMoneyMode))
+    return_type = Column(Enum(ReturnType))
 
     def __repr__(self):
         return f'id={self.id}, stock_id={self.stock_id}, bot_type_id={self.bot_type_id}, key_id={self.key_id}, ' \

@@ -5,52 +5,30 @@ from pydantic.error_wrappers import ValidationError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 from sqlalchemy.orm.session import Session
 
-from models import models_
+from models.models_ import Bot, BotType, Stock, Key, Kline, Transaction
 from config.settings import get_db
 from pool.main import Pool, get_pool
-from algorithms.bots.base import BotMoneyMode, ReturnType
 from algorithms.bots.trend_following import TrendFollowingBot
 from algorithms.bots.dca import DCABot
 from algorithms.bots.grid import GridBot
 from algorithms.bots.reinforcement import ReinforcementBot
+from api.bot.request_parameters import (
+    BotBaseParameters, TrendFollowingBotParameters, DCABotParameters, GridBotParameters, ReinforcementBotParameters
+)
+
 
 bot_router = APIRouter(prefix='/bot')
 
 
-class BotBaseParameters(BaseModel):
-    money_mode: BotMoneyMode
-    return_type: ReturnType
-    stock: str
-    max_level: float
-    min_level: float
-    max_money_to_invest: float
-    key_id: Optional[int]
-
-
-class TrendFollowingBotParameters(BotBaseParameters):
-    slow_sma: Optional[int]
-    fast_sma: Optional[int]
-
-
-class DCABotParameters(BotBaseParameters):
-    pass
-
-
-class GridBotParameters(BotBaseParameters):
-    pass
-
-
-class ReinforcementBotParameters(BotBaseParameters):
-    pass
-
-
-def validate_body(BotParameters, body) -> dict:
+def validate_body(BotParameters: Type[TrendFollowingBotParameters | DCABotParameters
+                                      | GridBotParameters | ReinforcementBotParameters],
+                  body: dict) -> dict:
     try:
         parameters = parse_obj_as(BotParameters, body).dict()
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'{e}')
 
-    return parameters.dict()
+    return parameters
 
 
 def create_bot(BotClass, parameters: dict) -> TrendFollowingBot:
@@ -62,37 +40,57 @@ def create_bot(BotClass, parameters: dict) -> TrendFollowingBot:
     return bot
 
 
+async def save_bot_to_db(bot_type_name: Literal['trend-following-bot', 'dca-bot', 'grid-bot', 'reinforcement-bot'],
+                         parameters: dict,
+                         db: Session) -> None:
+    bot_type_id = db.query(BotType).filter(BotType.name == bot_type_name).first().id
+    stock_id = db.query(Stock).filter(Stock.name == parameters['stock']).first().id
+
+    db.add(
+        Bot(
+            stock_id=stock_id,
+            bot_type_id=bot_type_id,
+            key_id=parameters['key_id'],
+            is_active=True,
+            max_money_to_invest=parameters['max_money_to_invest'],
+            max_level=parameters['max_level'],
+            min_level=parameters['min_level'],
+            return_type=parameters['return_type'],
+            money_mode=parameters['money_mode'],
+            parameters={
+                k: v for k, v in parameters.items() if k not in BotBaseParameters.__annotations__
+            }
+        )
+    )
+    db.commit()
+
+
+# todo: check stock with request to dataapi
+async def add_stock_to_db(stock_name: str) -> None:
+    pass
+
+
 async def create_specific_bot(BotParameters: Type[TrendFollowingBotParameters | DCABotParameters
                                                   | GridBotParameters | ReinforcementBotParameters],
                               bot_type_name: Literal['trend-following-bot', 'dca-bot', 'grid-bot', 'reinforcement-bot'],
                               BotClass: Type[TrendFollowingBot | DCABot | GridBot | ReinforcementBot],
-                              body: dict, pool: Pool, db: Session):
-
+                              body: dict,
+                              pool: Pool,
+                              db: Session):
     parameters = validate_body(BotParameters, body)
+    await add_stock_to_db(body['stock'])
     bot = create_bot(BotClass, parameters)
+    await save_bot_to_db(bot_type_name, parameters, db)
 
-    # Add bot to db
-    bot_type_id = db.query(models_.BotType).filter(models_.BotType.name == bot_type_name).first().id
-    stock_id = db.query(models_.Stock).filter(models_.Stock.name == body['stock']).first().id
-
-    db.add(models_.Bot(stock_id=stock_id, bot_type_id=bot_type_id, key_id=parameters['key_id'],
-                       is_active=True, max_money_to_invest=parameters['max_money_to_invest'],
-                       max_level=parameters['max_level'], min_level=parameters['min_level'],
-                       parameters={
-                           'slow_sma': parameters['slow_sma'],
-                           'fast_sma': parameters['fast_sma'],
-                       }))
-    db.commit()
-
-    # Start bot and add to RAM
-    # bot.start()
-    # pool.add(body['stock'], bot)
+    bot.start()
+    pool.add(body['stock'], bot)
 
 
 @bot_router.post("/create/{bot_type_name}")
 async def create_bot(request: Request,
                      bot_type_name: Literal['trend-following-bot', 'dca-bot', 'grid-bot', 'reinforcement-bot'],
-                     pool: Pool = Depends(get_pool), db: Session = Depends(get_db)):
+                     pool: Pool = Depends(get_pool),
+                     db: Session = Depends(get_db)):
     body = dict(await request.form())
 
     if bot_type_name == 'trend-following-bot':

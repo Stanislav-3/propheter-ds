@@ -48,7 +48,7 @@ def upgrade() -> None:
     # op.drop_table('BotParametersValues')
     # op.drop_index('ix_DataTypes_id', table_name='DataTypes')
     # op.drop_table('DataTypes')
-    op.add_column('BotTypes', sa.Column('parameters_schema', postgresql.JSONB(astext_type=sa.Text()), nullable=True))
+    op.add_column('BotT ypes', sa.Column('parameters_schema', postgresql.JSONB(astext_type=sa.Text()), nullable=True))
     op.drop_column('BotTypes', 'description')
     op.add_column('Bots', sa.Column('parameters', postgresql.JSONB(astext_type=sa.Text()), nullable=True))
     op.add_column('Bots', sa.Column('max_money_to_invest', sa.DECIMAL(precision=10, scale=2), nullable=True))
