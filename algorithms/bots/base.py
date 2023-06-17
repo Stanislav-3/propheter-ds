@@ -41,12 +41,11 @@ class BotBase(ABC):
     def start(self) -> None:
         pass
 
-    @abstractmethod
     def stop(self) -> None:
-        pass
+        self.status = BotStatus.STOPPED
 
     @abstractmethod
-    def step(self, new_price) -> None:
+    def step(self, new_price: float) -> None:
         pass
 
     def check_is_running(self) -> None:
@@ -57,3 +56,17 @@ class BotBase(ABC):
     def check_money_mode_is_configured(self) -> None:
         if self.money_mode == BotMoneyMode.NOT_CONFIGURED:
             raise BotModeIsNotConfiguredError(f'Money mode of bot "{self.__class__.__name__}" is not configured')
+
+    def buy(self):
+        if self.money_mode == BotMoneyMode.PAPER:
+            pass
+        elif self.money_mode == BotMoneyMode.REAL:
+            # todo: add transaction to db an request to data api
+            pass
+
+    def sell(self):
+        if self.money_mode == BotMoneyMode.PAPER:
+            pass
+        elif self.money_mode == BotMoneyMode.REAL:
+            # todo: add transaction to db an request to data api
+            pass

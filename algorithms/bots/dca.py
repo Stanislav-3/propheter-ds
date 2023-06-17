@@ -6,10 +6,7 @@ class DCABot(BotBase):
         super().__init__()
 
     def start(self) -> None:
-        super().start()
+        pass
 
-    def stop(self) -> None:
-        super().stop()
-
-    def step(self, new_price) -> BotEvaluationResult:
-        return super().step(new_price)
+    def step(self, new_price) -> None:
+        pass

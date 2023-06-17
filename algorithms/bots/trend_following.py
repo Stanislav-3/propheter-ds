@@ -3,7 +3,7 @@ import pandas as pd
 import pandera as pa
 from typing import Sequence, NamedTuple
 
-from algorithms.bots.base import BotBase, BotEvaluationResult, BotAction, ReturnType, BotMoneyMode
+from algorithms.bots.base import BotBase, BotEvaluationResult, BotAction, ReturnType, BotMoneyMode, BotStatus
 from algorithms.preprocessing.returns import (
     get_log_returns, get_returns, from_log_returns_to_factor, from_returns_to_factor
 )
@@ -32,7 +32,6 @@ class TrendFollowingBot(BotBase):
                  slow_sma: int = None,
                  fast_sma: int = None):
         super().__init__()
-
         self.key_id = key_id
         self.pair = stock
         self.max_level = max_level
@@ -43,7 +42,7 @@ class TrendFollowingBot(BotBase):
         self.slow_window = slow_sma
         self.fast_window = fast_sma
 
-        self.hold_asset=None
+        self.invested_in_pair = False
 
         # todo make an request
         self.prices = []
@@ -65,8 +64,6 @@ class TrendFollowingBot(BotBase):
             raise ValueError(f'Not enough data for that high value of slow MA')
 
     def start(self) -> None:
-        super().start()
-
         if self.slow_window and self.fast_window:
             self.check_sma_values(self.slow_window, self.fast_window, len(self.prices))
         else:
@@ -84,10 +81,7 @@ class TrendFollowingBot(BotBase):
         self.oldest_slow_value = prices[-self.slow_window]
         self.oldest_fast_value = prices[-self.fast_window]
 
-    def stop(self) -> None:
-        super().stop()
-
-    def step(self, new_price) -> BotEvaluationResult:
+    def step(self, new_price) -> None:
         self.check_is_running()
         self.check_money_mode_is_configured()
 
@@ -96,13 +90,10 @@ class TrendFollowingBot(BotBase):
         self.last_fast_average = (self.last_fast_average * self.fast_window
                                   - self.oldest_fast_value + new_price) / self.fast_window
 
-        # todo: add transaction to db
-        if not self.hold_asset and self.last_fast_average > self.last_slow_average:
-            return BotEvaluationResult(action=BotAction.BUY)
-        elif self.hold_asset and self.last_fast_average < self.last_slow_average:
-            return BotEvaluationResult(action=BotAction.SELL)
-
-        return BotEvaluationResult(action=BotAction.DO_NOTHING)
+        if not self.invested_in_pair and self.last_fast_average > self.last_slow_average:
+            self.buy()
+        elif self.invested_in_pair and self.last_fast_average < self.last_slow_average:
+            self.sell()
 
     def score(self, df: pa.typing.DataFrame[ScoreDataFrameSchema], fast: int, slow: int) -> float:
         self.check_sma_values(fast, slow, len(df))
