@@ -10,26 +10,22 @@ class BotStatus(Enum):
     STOPPED = 'Stopped'
 
 
-class BotAction(Enum):
-    BUY = 'Buy'
-    HOLD = 'Hold'
-    SELL = 'Sell'
-    DO_NOTHING = 'Do nothing'
-
-
 class BotMoneyMode(Enum):
     REAL = 'Real'
     PAPER = 'Paper'
     NOT_CONFIGURED = 'Not configured'
 
 
-# class BotEvaluationResult(NamedTuple):
-#     action: BotAction
-
-
 class ReturnType(Enum):
     LOG_RETURN = 'Log_return'
     RETURN = 'Return'
+
+
+class BotAction(Enum):
+    BUY = 'Buy'
+    HOLD = 'Hold'
+    SELL = 'Sell'
+    DO_NOTHING = 'Do nothing'
 
 
 class BotBase(ABC):

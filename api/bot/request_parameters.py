@@ -1,6 +1,7 @@
 from typing import Literal, Dict, Optional, Type
 from pydantic import BaseModel, parse_obj_as
 from pydantic.error_wrappers import ValidationError
+from datetime import datetime
 
 from algorithms.bots.base import BotMoneyMode, ReturnType
 

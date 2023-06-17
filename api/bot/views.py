@@ -1,4 +1,5 @@
 from typing import Literal, Dict, Optional, Type
+import requests
 from fastapi import APIRouter, Request, Response, Depends, status, HTTPException, Form, Body
 from pydantic import BaseModel, parse_obj_as
 from pydantic.error_wrappers import ValidationError
@@ -42,32 +43,38 @@ def create_bot(BotClass, parameters: dict) -> TrendFollowingBot:
 
 async def save_bot_to_db(bot_type_name: Literal['trend-following-bot', 'dca-bot', 'grid-bot', 'reinforcement-bot'],
                          parameters: dict,
-                         db: Session) -> None:
+                         db: Session) -> int:
     bot_type_id = db.query(BotType).filter(BotType.name == bot_type_name).first().id
     stock_id = db.query(Stock).filter(Stock.name == parameters['pair']).first().id
 
-    db.add(
-        Bot(
-            stock_id=stock_id,
-            bot_type_id=bot_type_id,
-            key_id=parameters['key_id'],
-            is_active=True,
-            max_money_to_invest=parameters['max_money_to_invest'],
-            max_level=parameters['max_level'],
-            min_level=parameters['min_level'],
-            return_type=parameters['return_type'],
-            money_mode=parameters['money_mode'],
-            parameters={
-                k: v for k, v in parameters.items() if k not in BotBaseParameters.__annotations__
-            }
-        )
+    bot = Bot(
+        stock_id=stock_id,
+        bot_type_id=bot_type_id,
+        key_id=parameters['key_id'],
+        is_active=True,
+        max_money_to_invest=parameters['max_money_to_invest'],
+        max_level=parameters['max_level'],
+        min_level=parameters['min_level'],
+        return_type=parameters['return_type'],
+        money_mode=parameters['money_mode'],
+        parameters={
+            k: v for k, v in parameters.items() if k not in BotBaseParameters.__annotations__
+        }
     )
+
+    db.add(bot)
     db.commit()
+
+    return bot.id
 
 
 # todo: check pair with request to dataapi
-async def add_stock_to_db(stock_name: str) -> None:
-    pass
+async def add_stock_to_db(stock_name: str, db: Session) -> None:
+    if db.query(Stock).filter(Stock.name == stock_name):
+        return
+
+    requests.post()
+
 
 
 async def create_specific_bot(BotParameters: Type[TrendFollowingBotParameters | DCABotParameters
@@ -78,16 +85,19 @@ async def create_specific_bot(BotParameters: Type[TrendFollowingBotParameters | 
                               pool: Pool,
                               db: Session) -> int:
     parameters = validate_body(BotParameters, body)
-    await add_stock_to_db(body['pair'])
-    # todo: add id to bot
-    bot = create_bot(BotClass, parameters)
-    await save_bot_to_db(bot_type_name, parameters, db)
+    print(await add_stock_to_db(parameters['pair'], db))
+    raise HTTPException(200, detail='yeah')
+
+    bot_id = await save_bot_to_db(bot_type_name, parameters, db)
+    parameters['id'] = bot_id
+    try:
+        bot = create_bot(BotClass, parameters)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Bot is not started\n{e}')
 
     bot.start()
-    pool.add(body['pair'], bot)
+    pool.add(parameters['pair'], bot)
 
-    # todo: return bot_id
-    bot_id = 1
     return bot_id
 
 

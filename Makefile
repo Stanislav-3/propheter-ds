@@ -12,3 +12,6 @@ run:
 
 set_pythonpath:
 	export PYTHONPATH="$PWD"
+
+kill:
+	kill -9 $$(lsof -ti :8000)

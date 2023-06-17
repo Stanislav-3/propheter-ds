@@ -3,7 +3,7 @@ import pandas as pd
 import pandera as pa
 from typing import Sequence, NamedTuple
 
-from algorithms.bots.base import BotBase, BotEvaluationResult, BotAction, ReturnType, BotMoneyMode, BotStatus
+from algorithms.bots.base import BotBase, ReturnType, BotMoneyMode, BotStatus
 from algorithms.preprocessing.returns import (
     get_log_returns, get_returns, from_log_returns_to_factor, from_returns_to_factor
 )
@@ -22,6 +22,7 @@ class MovingWindows(NamedTuple):
 # TODO: add option to use exp smoothing instead of SMA's
 class TrendFollowingBot(BotBase):
     def __init__(self,
+                 id: int,
                  key_id: int,
                  pair: str,
                  min_level: float,
@@ -32,6 +33,7 @@ class TrendFollowingBot(BotBase):
                  slow_window: int = None,
                  fast_window: int = None):
         super().__init__()
+        self.id = id
         self.key_id = key_id
         self.pair = pair
         self.min_level = min_level
