@@ -27,9 +27,11 @@ class DCABot(BotBase):
         self.status = BotStatus.RUNNING
 
     def step(self, new_price) -> None:
+        self.check_is_running()
+        self.check_money_mode_is_configured()
+
         if self.next_investment_time <= time.time():
             return
 
         self.buy()
         self.next_investment_time += self.investment_interval
-
