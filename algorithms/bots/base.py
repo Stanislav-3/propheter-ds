@@ -32,35 +32,28 @@ class ReturnType(Enum):
     RETURN = 'Return'
 
 
-# TODO: ADD RECONFIGURATION
 class BotBase(ABC):
     def __init__(self):
         self.status = BotStatus.STOPPED
         self.money_mode = BotMoneyMode.NOT_CONFIGURED
-        self.return_type = ReturnType.LOG_RETURN
-        self.hold_asset = False
-        self.id = None
 
     @abstractmethod
     def start(self) -> None:
-        self.status = BotStatus.LOADING
+        pass
 
     @abstractmethod
     def stop(self) -> None:
-        self.status = BotStatus.STOPPED
+        pass
 
     @abstractmethod
-    def step(self, new_price) -> BotEvaluationResult:
+    def step(self, new_price) -> None:
+        pass
+
+    def check_is_running(self) -> None:
         if self.status != BotStatus.RUNNING:
             raise BotIsNotRunningError(f'You cannot use bot "{self.__class__.__name__}"'
                                        f'because it is still not configured')
+
+    def check_money_mode_is_configured(self) -> None:
         if self.money_mode == BotMoneyMode.NOT_CONFIGURED:
-            raise BotModeIsNotConfiguredError(f'Mode of bot "{self.__class__.__name__}" is not configured')
-
-        return BotEvaluationResult(action=BotAction.DO_NOTHING)
-
-    def set_configured(self):
-        self.status = BotStatus.RUNNING
-
-        if self.money_mode == BotMoneyMode.NOT_CONFIGURED:
-            raise BotModeIsNotConfiguredError(f'Mode of bot "{self.__class__.__name__}" is not configured')
+            raise BotModeIsNotConfiguredError(f'Money mode of bot "{self.__class__.__name__}" is not configured')

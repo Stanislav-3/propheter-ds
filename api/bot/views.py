@@ -76,14 +76,19 @@ async def create_specific_bot(BotParameters: Type[TrendFollowingBotParameters | 
                               BotClass: Type[TrendFollowingBot | DCABot | GridBot | ReinforcementBot],
                               body: dict,
                               pool: Pool,
-                              db: Session):
+                              db: Session) -> int:
     parameters = validate_body(BotParameters, body)
     await add_stock_to_db(body['stock'])
+    # todo: add id to bot
     bot = create_bot(BotClass, parameters)
     await save_bot_to_db(bot_type_name, parameters, db)
 
     bot.start()
     pool.add(body['stock'], bot)
+
+    # todo: return bot_id
+    bot_id = 1
+    return bot_id
 
 
 @bot_router.post("/create/{bot_type_name}")
@@ -94,17 +99,17 @@ async def create_bot(request: Request,
     body = dict(await request.form())
 
     if bot_type_name == 'trend-following-bot':
-        await create_specific_bot(TrendFollowingBotParameters, bot_type_name, TrendFollowingBot, body, pool, db)
+        bot_id = await create_specific_bot(TrendFollowingBotParameters, bot_type_name, TrendFollowingBot, body, pool, db)
     elif bot_type_name == 'dca-bot':
-        await create_specific_bot(DCABotParameters, bot_type_name, DCABot, body, pool, db)
+        bot_id = await create_specific_bot(DCABotParameters, bot_type_name, DCABot, body, pool, db)
     elif bot_type_name == 'grid-bot':
-        await create_specific_bot(GridBotParameters, bot_type_name, GridBot, body, pool, db)
+        bot_id = await create_specific_bot(GridBotParameters, bot_type_name, GridBot, body, pool, db)
     elif bot_type_name == 'reinforcement-bot':
-        await create_specific_bot(ReinforcementBotParameters, bot_type_name, ReinforcementBot, body, pool, db)
+        bot_id = await create_specific_bot(ReinforcementBotParameters, bot_type_name, ReinforcementBot, body, pool, db)
     else:
         raise ValueError(f'Unknown bot_type_name={bot_type_name}')
 
-    return {'message': f'Bot with bot_type_name={bot_type_name} is successfully created'}
+    return {'bot_id': bot_id, 'message': f'Bot with bot_type_name={bot_type_name} is successfully created'}
 
 
 # TODO: NOT TO ADD DCA BOT TO RAM
@@ -162,7 +167,7 @@ async def delete_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = 
     errors_detail = []
     errors_detail_separator = '\n'
 
-    bot = db.query(models_.Bot).get(bot_id)
+    bot = db.query(Bot).get(bot_id)
     try:
         db.delete(bot)
         db.commit()

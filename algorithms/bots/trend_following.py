@@ -14,51 +14,69 @@ class ScoreDataFrameSchema(pa.DataFrameModel):
     LogReturn: pa.typing.Series[float or np.nan]
 
 
-class SMAParameters(NamedTuple):
-    slow: int
-    fast: int
+class MovingWindows(NamedTuple):
+    slow_window: int
+    fast_window: int
 
 
 # TODO: add option to use exp smoothing instead of SMA's
 class TrendFollowingBot(BotBase):
-    def __init__(self, stock: str, max_level: float, min_level: float, max_money_to_invest: float, key_id: int,
-                 money_mode: BotMoneyMode = None, return_type: ReturnType = None,
-                 slow_sma: int = None, fast_sma: int = None):
+    def __init__(self,
+                 stock: str,
+                 max_level: float,
+                 min_level: float,
+                 max_money_to_invest: float,
+                 key_id: int,
+                 money_mode: BotMoneyMode = None,
+                 return_type: ReturnType = None,
+                 slow_sma: int = None,
+                 fast_sma: int = None):
         super().__init__()
 
+        self.key_id = key_id
+        self.pair = stock
+        self.max_level = max_level
+        self.min_level = min_level
+        self.max_money_to_invest = max_money_to_invest
+        self.money_mode = money_mode
+        self.return_type = return_type
+        self.slow_window = slow_sma
+        self.fast_window = fast_sma
+
+        self.hold_asset=None
+
         # todo make an request
-        prices = []
+        self.prices = []
 
         self.last_slow_average = None
         self.last_fast_average = None
-
         self.oldest_slow_value = None
         self.oldest_fast_value = None
-
-        if slow_sma and fast_sma:
-            self.check_sma_values(slow_sma, fast_sma, len(prices))
-            self.slow_window = slow_sma
-            self.fast_window = fast_sma
-        else:
-            parameters = self.search_parameters(prices, fast_min=1, fast_max=100, slow_max=150, fast_slow_min_delta=1)
-            self.slow_window, self.fast_window = parameters.slow, parameters.fast
 
         self.start()
 
     @staticmethod
-    def check_sma_values(slow_sma: int, fast_sma: int, data_len: int) -> None:
-        if fast_sma <= 0 or slow_sma <= 0:
-            raise ValueError(f'Values should be greater than zero, but provided fast={fast_sma}, slow={slow_sma}')
-        if fast_sma >= slow_sma:
-            raise ValueError(f'Fast MA should be greater than slow, but provided fast={fast_sma}, slow={slow_sma}')
-        if slow_sma > data_len:
+    def check_sma_values(slow_window: int, fast_window: int, data_len: int) -> None:
+        if fast_window <= 0 or slow_window <= 0:
+            raise ValueError(f'Values should be greater than zero, but provided fast={fast_window}, slow={slow_window}')
+        if fast_window >= slow_window:
+            raise ValueError(f'Fast MA should be greater than slow, but provided fast={fast_window}, slow={slow_window}')
+        if slow_window > data_len:
             raise ValueError(f'Not enough data for that high value of slow MA')
 
     def start(self) -> None:
         super().start()
 
+        if self.slow_window and self.fast_window:
+            self.check_sma_values(self.slow_window, self.fast_window, len(self.prices))
+        else:
+            best_moving_windows = self.search_parameters(self.prices, fast_min=1, fast_max=100,
+                                                         slow_max=150, fast_slow_min_delta=1)
+            self.slow_window = best_moving_windows.slow_window
+            self.fast_window = best_moving_windows.fast_window
+
         # TODO: get prices from db or via request
-        prices = [float(i) for i in range(150)]
+        prices = self.prices
 
         self.last_slow_average = np.mean(prices[-self.slow_window:])
         self.last_fast_average = np.mean(prices[-self.fast_window:])
@@ -70,17 +88,21 @@ class TrendFollowingBot(BotBase):
         super().stop()
 
     def step(self, new_price) -> BotEvaluationResult:
+        self.check_is_running()
+        self.check_money_mode_is_configured()
+
         self.last_slow_average = (self.last_slow_average * self.slow_window
                                   - self.oldest_slow_value + new_price) / self.slow_window
         self.last_fast_average = (self.last_fast_average * self.fast_window
                                   - self.oldest_fast_value + new_price) / self.fast_window
+
         # todo: add transaction to db
         if not self.hold_asset and self.last_fast_average > self.last_slow_average:
             return BotEvaluationResult(action=BotAction.BUY)
         elif self.hold_asset and self.last_fast_average < self.last_slow_average:
             return BotEvaluationResult(action=BotAction.SELL)
-        else:
-            return BotEvaluationResult(action=BotAction.DO_NOTHING)
+
+        return BotEvaluationResult(action=BotAction.DO_NOTHING)
 
     def score(self, df: pa.typing.DataFrame[ScoreDataFrameSchema], fast: int, slow: int) -> float:
         self.check_sma_values(fast, slow, len(df))
@@ -99,8 +121,12 @@ class TrendFollowingBot(BotBase):
             raise Exception(f'Unknown return type: {self.return_type.name}')
 
     # todo: do it in separate process
-    def search_parameters(self, prices: Sequence,
-                          fast_min: int, fast_max: int, slow_max: int, fast_slow_min_delta: int) -> SMAParameters:
+    def search_parameters(self,
+                          prices: Sequence,
+                          fast_min: int,
+                          fast_max: int,
+                          slow_max: int,
+                          fast_slow_min_delta: int) -> MovingWindows:
         best_fast, best_slow = None, None
         best_score = float('-inf')
 
@@ -118,4 +144,4 @@ class TrendFollowingBot(BotBase):
                     best_slow = slow
                     best_score = score
 
-        return SMAParameters(fast=best_fast, slow=best_slow)
+        return MovingWindows(slow_window=best_slow, fast_window=best_fast)
