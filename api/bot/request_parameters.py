@@ -9,7 +9,7 @@ class BotBaseParameters(BaseModel):
     min_level: float
     max_level: float
     max_money_to_invest: float
-    stock: str
+    pair: str
 
     key_id: Optional[int]
 
@@ -18,12 +18,12 @@ class BotBaseParameters(BaseModel):
 
 
 class TrendFollowingBotParameters(BotBaseParameters):
-    slow_sma: Optional[int]
-    fast_sma: Optional[int]
+    slow_window: Optional[int]
+    fast_window: Optional[int]
 
 
 class DCABotParameters(BotBaseParameters):
-    pass
+    investment_interval: int
 
 
 class GridBotParameters(BotBaseParameters):

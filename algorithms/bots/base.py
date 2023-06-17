@@ -23,8 +23,8 @@ class BotMoneyMode(Enum):
     NOT_CONFIGURED = 'Not configured'
 
 
-class BotEvaluationResult(NamedTuple):
-    action: BotAction
+# class BotEvaluationResult(NamedTuple):
+#     action: BotAction
 
 
 class ReturnType(Enum):
@@ -34,7 +34,7 @@ class ReturnType(Enum):
 
 class BotBase(ABC):
     def __init__(self):
-        self.status = BotStatus.STOPPED
+        self.status = BotStatus.LOADING
         self.money_mode = BotMoneyMode.NOT_CONFIGURED
 
     @abstractmethod

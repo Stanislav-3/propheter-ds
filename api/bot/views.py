@@ -44,7 +44,7 @@ async def save_bot_to_db(bot_type_name: Literal['trend-following-bot', 'dca-bot'
                          parameters: dict,
                          db: Session) -> None:
     bot_type_id = db.query(BotType).filter(BotType.name == bot_type_name).first().id
-    stock_id = db.query(Stock).filter(Stock.name == parameters['stock']).first().id
+    stock_id = db.query(Stock).filter(Stock.name == parameters['pair']).first().id
 
     db.add(
         Bot(
@@ -65,7 +65,7 @@ async def save_bot_to_db(bot_type_name: Literal['trend-following-bot', 'dca-bot'
     db.commit()
 
 
-# todo: check stock with request to dataapi
+# todo: check pair with request to dataapi
 async def add_stock_to_db(stock_name: str) -> None:
     pass
 
@@ -78,13 +78,13 @@ async def create_specific_bot(BotParameters: Type[TrendFollowingBotParameters | 
                               pool: Pool,
                               db: Session) -> int:
     parameters = validate_body(BotParameters, body)
-    await add_stock_to_db(body['stock'])
+    await add_stock_to_db(body['pair'])
     # todo: add id to bot
     bot = create_bot(BotClass, parameters)
     await save_bot_to_db(bot_type_name, parameters, db)
 
     bot.start()
-    pool.add(body['stock'], bot)
+    pool.add(body['pair'], bot)
 
     # todo: return bot_id
     bot_id = 1

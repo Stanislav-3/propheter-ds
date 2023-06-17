@@ -22,25 +22,25 @@ class MovingWindows(NamedTuple):
 # TODO: add option to use exp smoothing instead of SMA's
 class TrendFollowingBot(BotBase):
     def __init__(self,
-                 stock: str,
-                 max_level: float,
-                 min_level: float,
-                 max_money_to_invest: float,
                  key_id: int,
+                 pair: str,
+                 min_level: float,
+                 max_level: float,
+                 max_money_to_invest: float,
                  money_mode: BotMoneyMode = None,
                  return_type: ReturnType = None,
-                 slow_sma: int = None,
-                 fast_sma: int = None):
+                 slow_window: int = None,
+                 fast_window: int = None):
         super().__init__()
         self.key_id = key_id
-        self.pair = stock
-        self.max_level = max_level
+        self.pair = pair
         self.min_level = min_level
+        self.max_level = max_level
         self.max_money_to_invest = max_money_to_invest
         self.money_mode = money_mode
         self.return_type = return_type
-        self.slow_window = slow_sma
-        self.fast_window = fast_sma
+        self.slow_window = slow_window
+        self.fast_window = fast_window
 
         self.invested_in_pair = False
 
@@ -80,6 +80,8 @@ class TrendFollowingBot(BotBase):
 
         self.oldest_slow_value = prices[-self.slow_window]
         self.oldest_fast_value = prices[-self.fast_window]
+
+        self.status = BotStatus.RUNNING
 
     def step(self, new_price) -> None:
         self.check_is_running()

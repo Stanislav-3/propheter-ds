@@ -3,9 +3,8 @@ from algorithms.bots.base import BotBase
 from algorithms.bots.trend_following import TrendFollowingBot
 
 
-# TODO: make a better name instead of stock (cause we got stock-to-stock relations)
 # TODO: WHAT happens if server had gone down, and how to restore it
-# also restore it bot is in db but is not in pool
+# also restore if bot is in db but is not in pool
 class Pool:
     is_created = False
 
