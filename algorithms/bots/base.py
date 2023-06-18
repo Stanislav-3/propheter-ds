@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
 from enum import Enum
+
+import requests
+
 from exceptions.bot_exceptions import BotIsNotRunningError, BotModeIsNotConfiguredError
 from typing import NamedTuple
 
@@ -32,6 +35,9 @@ class BotBase(ABC):
     def __init__(self):
         self.status = BotStatus.LOADING
         self.money_mode = BotMoneyMode.NOT_CONFIGURED
+        self.paper_money = 1000
+        self.pair = None
+        self.invested_in_pair = False
 
     @abstractmethod
     def start(self) -> None:
@@ -53,16 +59,31 @@ class BotBase(ABC):
         if self.money_mode == BotMoneyMode.NOT_CONFIGURED:
             raise BotModeIsNotConfiguredError(f'Money mode of bot "{self.__class__.__name__}" is not configured')
 
-    def buy(self):
+    def buy(self, amount: float):
+        print('BUY')
         if self.money_mode == BotMoneyMode.PAPER:
-            pass
+            price = requests.post(f'https://api.binance.com/api/v3/ticker/price?symbol={self.pair}').json()['price']
+            self.paper_money *= price
+
         elif self.money_mode == BotMoneyMode.REAL:
             # todo: add transaction to db an request to data api
             pass
 
-    def sell(self):
+    def sell(self, amount: float):
+        print('SELL')
         if self.money_mode == BotMoneyMode.PAPER:
-            pass
+            price = requests.post(f'https://api.binance.com/api/v3/ticker/price?symbol={self.pair}').json()['price']
+            self.paper_money /= price
         elif self.money_mode == BotMoneyMode.REAL:
             # todo: add transaction to db an request to data api
             pass
+
+    def verbose_price(self, amount: float):
+        if self.money_mode == BotMoneyMode.PAPER:
+            if self.invested_in_pair:
+                price = requests.post(f'https://api.binance.com/api/v3/ticker/price?symbol={self.pair}').json()['price']
+                money = self.paper_money / price
+            else:
+                money = self.paper_money
+
+            print('Current paper balance:', money)

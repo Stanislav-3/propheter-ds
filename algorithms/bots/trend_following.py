@@ -38,12 +38,12 @@ class TrendFollowingBot(BotBase):
         self.min_level = min_level
         self.max_level = max_level
         self.max_money_to_invest = max_money_to_invest
+        self.money_to_invest = max_money_to_invest
         self.money_mode = money_mode
         self.return_type = return_type
         self.slow_window = slow_window
         self.fast_window = fast_window
 
-        self.invested_in_pair = False
         self.loading_prices = []
 
         self.slow_sma = None
@@ -100,9 +100,11 @@ class TrendFollowingBot(BotBase):
         self.fast_sma = (self.fast_sma * self.fast_window - self.oldest_fast_price + new_price) / self.fast_window
 
         if not self.invested_in_pair and self.fast_sma > self.slow_sma:
-            self.buy()
+            self.buy(self.max_money_to_invest)
         elif self.invested_in_pair and self.fast_sma < self.slow_sma:
-            self.sell()
+            self.sell(self.max_money_to_invest)
+
+        self.verbose_price()
 
     def score(self, df: pa.typing.DataFrame[ScoreDataFrameSchema], fast: int, slow: int) -> float:
         self.check_sma_values(fast, slow, len(df))
