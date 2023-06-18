@@ -20,6 +20,8 @@ DATABASE_URI = f'postgresql://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST
 API_KEY = os.getenv('API_KEY')
 API_SECRET = os.getenv('API_SECRET')
 
+DATA_API_URI = os.getenv('DATA_API_URI')
+
 
 # Create an engine
 engine = create_engine(DATABASE_URI)

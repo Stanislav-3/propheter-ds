@@ -45,7 +45,6 @@ def get_pair_id(pair_name: str, db: Session) -> int:
 async def new_ticks(pair: str = Form(...), time: str = Form(...), open: str = Form(...), close: str = Form(...),
                     high: str = Form(...), low: str = Form(...), vol: str = Form(...),
                     db: Session = Depends(get_db)):
-    print(type(get_pair_id(pair, db)))
     kline = Kline(stock_id=get_pair_id(pair, db), date=parse_datetime(time), low=parse_float(low),
                   high=parse_float(high), open=parse_float(open), close=parse_float(close), volume=parse_float(vol))
 

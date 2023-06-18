@@ -16,6 +16,7 @@ from algorithms.bots.reinforcement import ReinforcementBot
 from api.bot.request_parameters import (
     BotBaseParameters, TrendFollowingBotParameters, DCABotParameters, GridBotParameters, ReinforcementBotParameters
 )
+from config.settings import DATA_API_URI
 
 
 bot_router = APIRouter(prefix='/bot')
@@ -68,13 +69,52 @@ async def save_bot_to_db(bot_type_name: Literal['trend-following-bot', 'dca-bot'
     return bot.id
 
 
-# todo: check pair with request to dataapi
-async def add_stock_to_db(stock_name: str, db: Session) -> None:
+async def try_to_add_pair_to_db(stock_name: str, db: Session) -> bool:
     if db.query(Stock).filter(Stock.name == stock_name):
-        return
+        return False
 
-    requests.post()
+    pair = Stock(name=stock_name)
+    db.add(pair)
+    db.commit()
 
+    return True
+
+
+async def remove_pair_from_db(stock_name: str, db: Session) -> bool:
+    pair = db.query(Stock).filter(Stock.name == stock_name).first()
+
+    if not pair:
+        return False
+    # pair_id = pair.id
+    # maybe add logic for deleting klines
+
+    db.delete(pair)
+    db.commit()
+
+    return True
+
+
+async def register_pair(pair: str, db: Session) -> bool:
+    pair_added = await try_to_add_pair_to_db(pair, db)
+    if not pair_added:
+        return False
+
+    response = requests.post(f'{DATA_API_URI}/api/add-pair/{pair}')
+    if response.status_code != 200:
+        await remove_pair_from_db(pair, db)
+        raise HTTPException(status_code=response.status_code, detail=response.json()['detail'])
+
+    return True
+
+
+async def unregister_pair(pair: str, db: Session):
+    removed = await remove_pair_from_db(pair, db)
+    if not removed:
+        raise HTTPException(status_code=500, detail=f'Pair {pair} is not found in db')
+
+    response = requests.post(f'{DATA_API_URI}/api/remove-pair/{pair}')
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail=response.json()['detail'])
 
 
 async def create_specific_bot(BotParameters: Type[TrendFollowingBotParameters | DCABotParameters
@@ -85,14 +125,17 @@ async def create_specific_bot(BotParameters: Type[TrendFollowingBotParameters | 
                               pool: Pool,
                               db: Session) -> int:
     parameters = validate_body(BotParameters, body)
-    print(await add_stock_to_db(parameters['pair'], db))
-    raise HTTPException(200, detail='yeah')
+
+    registered = await register_pair(parameters['pair'], db)
 
     bot_id = await save_bot_to_db(bot_type_name, parameters, db)
     parameters['id'] = bot_id
+
     try:
         bot = create_bot(BotClass, parameters)
     except Exception as e:
+        if registered:
+            await unregister_pair(parameters['pair'], db)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Bot is not started\n{e}')
 
     bot.start()
@@ -172,6 +215,7 @@ async def stop_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = De
 
 
 # TODO: async session for sqlalchemy?
+# TODO: ADD DELETING OF PAIR IF NO BOTS ARE USING IT
 @bot_router.post("/delete/{bot_id}")
 async def delete_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = Depends(get_db)):
     errors_detail = []

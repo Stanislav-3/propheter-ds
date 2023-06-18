@@ -19,10 +19,9 @@ class MovingWindows(NamedTuple):
     fast_window: int
 
 
-# TODO: add option to use exp smoothing instead of SMA's
 class TrendFollowingBot(BotBase):
     def __init__(self,
-                 id: int,
+                 id_: int,
                  key_id: int,
                  pair: str,
                  min_level: float,
@@ -33,7 +32,7 @@ class TrendFollowingBot(BotBase):
                  slow_window: int = None,
                  fast_window: int = None):
         super().__init__()
-        self.id = id
+        self.id = id_
         self.key_id = key_id
         self.pair = pair
         self.min_level = min_level
@@ -45,58 +44,64 @@ class TrendFollowingBot(BotBase):
         self.fast_window = fast_window
 
         self.invested_in_pair = False
+        self.loading_prices = []
 
-        # todo make an request
-        self.prices = []
-
-        self.last_slow_average = None
-        self.last_fast_average = None
-        self.oldest_slow_value = None
-        self.oldest_fast_value = None
+        self.slow_sma = None
+        self.fast_sma = None
+        self.oldest_slow_price = None
+        self.oldest_fast_price = None
 
         self.start()
 
     @staticmethod
-    def check_sma_values(slow_window: int, fast_window: int, data_len: int) -> None:
+    def check_sma_values(slow_window: int, fast_window: int, upper_bound: int) -> None:
         if fast_window <= 0 or slow_window <= 0:
             raise ValueError(f'Values should be greater than zero, but provided fast={fast_window}, slow={slow_window}')
         if fast_window >= slow_window:
             raise ValueError(f'Fast MA should be greater than slow, but provided fast={fast_window}, slow={slow_window}')
-        if slow_window > data_len:
-            raise ValueError(f'Not enough data for that high value of slow MA')
+        if slow_window > upper_bound:
+            raise ValueError(f'Too high value of slow MA. It should be less than {upper_bound}')
 
     def start(self) -> None:
+        self.status = BotStatus.LOADING
+
         if self.slow_window and self.fast_window:
-            self.check_sma_values(self.slow_window, self.fast_window, len(self.prices))
+            self.check_sma_values(self.slow_window, self.fast_window, 200)
         else:
-            best_moving_windows = self.search_parameters(self.prices, fast_min=1, fast_max=100,
+            # todo: change prices
+            best_moving_windows = self.search_parameters(self.loading_prices, fast_min=1, fast_max=100,
                                                          slow_max=150, fast_slow_min_delta=1)
             self.slow_window = best_moving_windows.slow_window
             self.fast_window = best_moving_windows.fast_window
 
-        # TODO: get prices from db or via request
-        prices = self.prices
+    def step(self, new_price) -> None:
+        if self.status == BotStatus.LOADING:
+            self.loading_step(new_price)
+        elif self.status == BotStatus.RUNNING:
+            self.running_step(new_price)
 
-        self.last_slow_average = np.mean(prices[-self.slow_window:])
-        self.last_fast_average = np.mean(prices[-self.fast_window:])
+    def loading_step(self, new_price):
+        self.loading_prices.append(new_price)
+        
+        if len(self.loading_prices) != self.slow_window:
+            return 
 
-        self.oldest_slow_value = prices[-self.slow_window]
-        self.oldest_fast_value = prices[-self.fast_window]
+        self.slow_sma = np.mean(self.loading_prices)
+        self.fast_sma = np.mean(self.loading_prices[-self.fast_window:])
 
+        self.oldest_slow_price = self.loading_prices[-self.slow_window]
+        self.oldest_fast_price = self.loading_prices[-self.fast_window]
+
+        self.loading_prices.clear()
         self.status = BotStatus.RUNNING
 
-    def step(self, new_price) -> None:
-        self.check_is_running()
-        self.check_money_mode_is_configured()
+    def running_step(self, new_price):
+        self.slow_sma = (self.slow_sma * self.slow_window - self.oldest_slow_price + new_price) / self.slow_window
+        self.fast_sma = (self.fast_sma * self.fast_window - self.oldest_fast_price + new_price) / self.fast_window
 
-        self.last_slow_average = (self.last_slow_average * self.slow_window
-                                  - self.oldest_slow_value + new_price) / self.slow_window
-        self.last_fast_average = (self.last_fast_average * self.fast_window
-                                  - self.oldest_fast_value + new_price) / self.fast_window
-
-        if not self.invested_in_pair and self.last_fast_average > self.last_slow_average:
+        if not self.invested_in_pair and self.fast_sma > self.slow_sma:
             self.buy()
-        elif self.invested_in_pair and self.last_fast_average < self.last_slow_average:
+        elif self.invested_in_pair and self.fast_sma < self.slow_sma:
             self.sell()
 
     def score(self, df: pa.typing.DataFrame[ScoreDataFrameSchema], fast: int, slow: int) -> float:
