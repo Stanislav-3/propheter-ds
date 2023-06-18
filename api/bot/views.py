@@ -12,7 +12,8 @@ from algorithms.bots.reinforcement import ReinforcementBot
 from config.settings import get_db
 from api.bot.request_parameters import (TrendFollowingBotParameters,
                                         DCABotParameters, GridBotParameters, ReinforcementBotParameters)
-from api.bot.bot_stuff import create_specific_bot
+from api.bot.bot_stuff import create_specific_bot, start_bot_and_register_pair
+from api.bot.db_stuff import activate_bot
 
 
 bot_router = APIRouter(prefix='/bot')
@@ -39,27 +40,16 @@ async def create_bot(request: Request,
     return {'bot_id': bot_id, 'message': f'Bot with bot_type_name={bot_type_name} is successfully created'}
 
 
-# TODO: NOT TO ADD DCA BOT TO RAM
 @bot_router.post("/start/{bot_id}")
 async def start_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = Depends(get_db)):
-    errors_detail = []
-    errors_detail_separator = '\n'
-
-    bot = db.query(Bot).get(bot_id)
     try:
-        bot.is_active = True
-        db.commit()
-    except UnmappedInstanceError:
-        errors_detail.append(f'Bot with id={bot_id} is not found in the database')
+        await activate_bot(bot_id, db)
 
-    bot = pool.get_bot(bot_id)
-    if bot:
-        bot.start()
-    else:
-        errors_detail.append(f'Bot with id={bot_id} is not found in the pool')
+        bot = pool.get_bot(bot_id)
+        start_bot_and_register_pair(bot, pool, pair, db)
+    except (Exception, UnmappedInstanceError, HTTPException) as e:
+        raise HTTPException(404, detail=str(e))
 
-    if errors_detail:
-        raise HTTPException(404, detail=errors_detail_separator.join(errors_detail))
     return {'message': f'Bot with id={bot_id} is successfully started'}
 
 

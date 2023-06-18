@@ -2,6 +2,7 @@ from typing import Literal, Type
 from fastapi import status, HTTPException
 from sqlalchemy.orm.session import Session
 
+from models.models_ import Bot
 from pool.main import Pool
 from algorithms.bots.trend_following import TrendFollowingBot
 from algorithms.bots.dca import DCABot
@@ -24,6 +25,15 @@ def create_bot(BotClass, parameters: dict) -> TrendFollowingBot | DCABotParamete
     return bot
 
 
+async def start_bot_and_register_pair(bot: TrendFollowingBot | DCABotParameters | GridBotParameters | ReinforcementBotParameters,
+                                      pool: Pool,
+                                      pair: str,
+                                      db: Session) -> None:
+    await register_pair(pair, db)
+    bot.start()
+    pool.add(pair, bot)
+
+
 async def create_specific_bot(BotParameters: Type[TrendFollowingBotParameters | DCABotParameters
                                                   | GridBotParameters | ReinforcementBotParameters],
                               bot_type_name: Literal['trend-following-bot', 'dca-bot', 'grid-bot', 'reinforcement-bot'],
@@ -33,19 +43,14 @@ async def create_specific_bot(BotParameters: Type[TrendFollowingBotParameters | 
                               db: Session) -> int:
     parameters = validate_bot_parameters_body(BotParameters, body)
 
-    pair_is_registered = await register_pair(parameters['pair'], db)
+    try:
+        bot = create_bot(BotClass, parameters)
+    except (Exception, HTTPException) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Bot is not started. {e}')
 
     bot_id = await add_bot_to_db(bot_type_name, parameters, db)
     parameters['id'] = bot_id
 
-    try:
-        bot = create_bot(BotClass, parameters)
-    except (Exception, HTTPException) as e:
-        if pair_is_registered:
-            await unregister_pair(parameters['pair'], db)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Bot is not started. {e}')
-
-    bot.start()
-    pool.add(parameters['pair'], bot)
+    await start_bot_and_register_pair(bot, pool, parameters['pair'], db)
 
     return bot_id

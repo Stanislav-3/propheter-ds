@@ -1,5 +1,7 @@
 from typing import Literal
 from sqlalchemy.orm.session import Session
+from sqlalchemy.orm.exc import UnmappedInstanceError
+
 from models.models_ import Bot, BotType, Stock, Key, Kline, Transaction
 from api.bot.request_parameters import BotBaseParameters
 
@@ -48,3 +50,12 @@ async def remove_pair_and_klines_from_db(stock_name: str, db: Session) -> None:
     db.delete(db.query(Kline).filter(Kline.stock_id == pair.id))
     db.delete(pair)
     db.commit()
+
+
+async def activate_bot(bot_id: int, db: Session):
+    bot = db.query(Bot).get(bot_id)
+    try:
+        bot.is_active = True
+        db.commit()
+    except UnmappedInstanceError:
+        raise
