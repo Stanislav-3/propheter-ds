@@ -21,7 +21,7 @@ class MovingWindows(NamedTuple):
 
 class TrendFollowingBot(BotBase):
     def __init__(self,
-                 id_: int,
+                 id: int,
                  key_id: int,
                  pair: str,
                  min_level: float,
@@ -32,7 +32,7 @@ class TrendFollowingBot(BotBase):
                  slow_window: int = None,
                  fast_window: int = None):
         super().__init__()
-        self.id = id_
+        self.id = id
         self.key_id = key_id
         self.pair = pair
         self.min_level = min_level
@@ -74,14 +74,16 @@ class TrendFollowingBot(BotBase):
             self.slow_window = best_moving_windows.slow_window
             self.fast_window = best_moving_windows.fast_window
 
-    def step(self, new_price) -> None:
+    def step(self, new_price: int) -> None:
         if self.status == BotStatus.LOADING:
             self.loading_step(new_price)
         elif self.status == BotStatus.RUNNING:
             self.running_step(new_price)
 
-    def loading_step(self, new_price):
+    def loading_step(self, new_price: int):
+        print('LOADING_STEP')
         self.loading_prices.append(new_price)
+        print(self.loading_prices)
         
         if len(self.loading_prices) != self.slow_window:
             return 
@@ -104,7 +106,7 @@ class TrendFollowingBot(BotBase):
         elif self.invested_in_pair and self.fast_sma < self.slow_sma:
             self.sell(self.max_money_to_invest)
 
-        self.verbose_price()
+        self.verbose_price(new_price)
 
     def score(self, df: pa.typing.DataFrame[ScoreDataFrameSchema], fast: int, slow: int) -> float:
         self.check_sma_values(fast, slow, len(df))

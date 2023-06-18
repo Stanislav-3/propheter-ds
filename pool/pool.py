@@ -19,10 +19,14 @@ class Pool:
         self.stock_bots_mapping = {}
 
     def add(self, stock_name: str, bot: BotBase):
+        print("TRY TO ADD NEW STOCK TO MAPPING IN POOL")
         try:
             self.stock_bots_mapping[stock_name].append(bot)
         except KeyError:
+            print("ADD NEW STOCK TO MAPPING IN POOL")
             self.stock_bots_mapping[stock_name] = [bot]
+        except Exception as e:
+            print('OTHER EXCEPTION', e)
 
     def remove(self, stock_name, bot):
         #  TODO: think about that
@@ -31,9 +35,12 @@ class Pool:
         if len(self.stock_bots_mapping[stock_name]) == 0:
             del self.stock_bots_mapping[stock_name]
 
-    def run_bots(self, stock_name: str):
+    def run_bots(self, stock_name: str, new_price: float):
         # TODO: THINK ABOUT BOTS IN TERMS OF PARALLELISM
         bots = self.stock_bots_mapping[stock_name]
+
+        for bot in bots:
+            bot.step(new_price)
 
     def get_bot(self, bot_id: int) -> None or TrendFollowingBot:
         bots_lists = self.stock_bots_mapping.values()

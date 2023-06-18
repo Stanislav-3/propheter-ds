@@ -59,29 +59,26 @@ class BotBase(ABC):
         if self.money_mode == BotMoneyMode.NOT_CONFIGURED:
             raise BotModeIsNotConfiguredError(f'Money mode of bot "{self.__class__.__name__}" is not configured')
 
-    def buy(self, amount: float):
+    def buy(self, price: float):
         print('BUY')
         if self.money_mode == BotMoneyMode.PAPER:
-            price = requests.post(f'https://api.binance.com/api/v3/ticker/price?symbol={self.pair}').json()['price']
             self.paper_money *= price
 
         elif self.money_mode == BotMoneyMode.REAL:
             # todo: add transaction to db an request to data api
             pass
 
-    def sell(self, amount: float):
+    def sell(self, price: float):
         print('SELL')
         if self.money_mode == BotMoneyMode.PAPER:
-            price = requests.post(f'https://api.binance.com/api/v3/ticker/price?symbol={self.pair}').json()['price']
             self.paper_money /= price
         elif self.money_mode == BotMoneyMode.REAL:
             # todo: add transaction to db an request to data api
             pass
 
-    def verbose_price(self, amount: float):
+    def verbose_price(self, price: float):
         if self.money_mode == BotMoneyMode.PAPER:
             if self.invested_in_pair:
-                price = requests.post(f'https://api.binance.com/api/v3/ticker/price?symbol={self.pair}').json()['price']
                 money = self.paper_money / price
             else:
                 money = self.paper_money

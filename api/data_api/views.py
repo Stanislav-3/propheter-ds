@@ -5,6 +5,7 @@ from datetime import datetime
 
 from config.settings import get_db
 from models.models_ import Stock, Kline
+from pool.main import Pool, get_pool
 
 
 data_api_router = APIRouter(prefix='/data-api')
@@ -44,10 +45,17 @@ def get_pair_id(pair_name: str, db: Session) -> int:
 @data_api_router.post("/ticks")
 async def new_ticks(pair: str = Form(...), time: str = Form(...), open: str = Form(...), close: str = Form(...),
                     high: str = Form(...), low: str = Form(...), vol: str = Form(...),
+                    pool: Pool = Depends(get_pool),
                     db: Session = Depends(get_db)):
+    # Adding new tick to db
     kline = Kline(stock_id=get_pair_id(pair, db), date=parse_datetime(time), low=parse_float(low),
                   high=parse_float(high), open=parse_float(open), close=parse_float(close), volume=parse_float(vol))
 
     db.add(kline)
     db.commit()
-    return {'message': 'Successfully added new_tick'}
+
+    # Wake up models
+    print("WAKE UP BOTS")
+    pool.run_bots(pair, parse_float(close))
+
+    return {'message': 'Successfully added new_tick and run bots.'}

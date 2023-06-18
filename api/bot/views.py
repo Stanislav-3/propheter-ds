@@ -33,10 +33,12 @@ def validate_body(BotParameters: Type[TrendFollowingBotParameters | DCABotParame
     return parameters
 
 
-def create_bot(BotClass, parameters: dict) -> TrendFollowingBot:
+def create_finally_specific_bot(BotClass, parameters: dict) -> TrendFollowingBot:
     try:
+        print('Creating bot with parameters:', parameters)
         bot = BotClass(**parameters)
     except Exception as e:
+        print('smth happend', e)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'{e}')
 
     return bot
@@ -70,7 +72,7 @@ async def save_bot_to_db(bot_type_name: Literal['trend-following-bot', 'dca-bot'
 
 
 async def try_to_add_pair_to_db(stock_name: str, db: Session) -> bool:
-    if db.query(Stock).filter(Stock.name == stock_name):
+    if db.query(Stock).filter(Stock.name == stock_name).first():
         return False
 
     pair = Stock(name=stock_name)
@@ -96,15 +98,17 @@ async def remove_pair_from_db(stock_name: str, db: Session) -> bool:
 
 async def register_pair(pair: str, db: Session) -> bool:
     pair_added = await try_to_add_pair_to_db(pair, db)
-    if not pair_added:
-        return False
+    print('pair_added:', pair_added)
 
     response = requests.post(f'{DATA_API_URI}/api/add-pair/{pair}')
     if response.status_code != 200:
+        print('NOOOOOOOOOOOOOOOOOOOOOO')
         await remove_pair_from_db(pair, db)
         raise HTTPException(status_code=response.status_code, detail=response.json()['detail'])
 
-    return True
+    print('RESPONSE FROM DATA API', response.json())
+
+    return pair_added
 
 
 async def unregister_pair(pair: str, db: Session):
@@ -127,20 +131,22 @@ async def create_specific_bot(BotParameters: Type[TrendFollowingBotParameters | 
     parameters = validate_body(BotParameters, body)
 
     registered = await register_pair(parameters['pair'], db)
+    print('registered', registered)
 
     bot_id = await save_bot_to_db(bot_type_name, parameters, db)
     parameters['id'] = bot_id
 
     try:
-        bot = create_bot(BotClass, parameters)
+        bot = create_finally_specific_bot(BotClass, parameters)
     except Exception as e:
+        print('BOT IS NOT CREATED', e)
         if registered:
             await unregister_pair(parameters['pair'], db)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Bot is not started\n{e}')
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Bot is not started. {e}')
 
+    print(bot)
     bot.start()
     pool.add(parameters['pair'], bot)
-
     return bot_id
 
 
