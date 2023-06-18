@@ -1,153 +1,21 @@
-from typing import Literal, Dict, Optional, Type
-import requests
-from fastapi import APIRouter, Request, Response, Depends, status, HTTPException, Form, Body
-from pydantic import BaseModel, parse_obj_as
-from pydantic.error_wrappers import ValidationError
+from typing import Literal, Type
+from fastapi import APIRouter, Request, Depends, status, HTTPException
 from sqlalchemy.orm.exc import UnmappedInstanceError
 from sqlalchemy.orm.session import Session
 
 from models.models_ import Bot, BotType, Stock, Key, Kline, Transaction
-from config.settings import get_db
 from pool.main import Pool, get_pool
 from algorithms.bots.trend_following import TrendFollowingBot
 from algorithms.bots.dca import DCABot
 from algorithms.bots.grid import GridBot
 from algorithms.bots.reinforcement import ReinforcementBot
-from api.bot.request_parameters import (
-    BotBaseParameters, TrendFollowingBotParameters, DCABotParameters, GridBotParameters, ReinforcementBotParameters
-)
-from config.settings import DATA_API_URI
+from config.settings import get_db
+from api.bot.request_parameters import (TrendFollowingBotParameters,
+                                        DCABotParameters, GridBotParameters, ReinforcementBotParameters)
+from api.bot.bot_stuff import create_specific_bot
 
 
 bot_router = APIRouter(prefix='/bot')
-
-
-def validate_body(BotParameters: Type[TrendFollowingBotParameters | DCABotParameters
-                                      | GridBotParameters | ReinforcementBotParameters],
-                  body: dict) -> dict:
-    try:
-        parameters = parse_obj_as(BotParameters, body).dict()
-    except ValidationError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'{e}')
-
-    return parameters
-
-
-def create_finally_specific_bot(BotClass, parameters: dict) -> TrendFollowingBot:
-    try:
-        print('Creating bot with parameters:', parameters)
-        bot = BotClass(**parameters)
-    except Exception as e:
-        print('smth happend', e)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'{e}')
-
-    return bot
-
-
-async def save_bot_to_db(bot_type_name: Literal['trend-following-bot', 'dca-bot', 'grid-bot', 'reinforcement-bot'],
-                         parameters: dict,
-                         db: Session) -> int:
-    bot_type_id = db.query(BotType).filter(BotType.name == bot_type_name).first().id
-    stock_id = db.query(Stock).filter(Stock.name == parameters['pair']).first().id
-
-    bot = Bot(
-        stock_id=stock_id,
-        bot_type_id=bot_type_id,
-        key_id=parameters['key_id'],
-        is_active=True,
-        max_money_to_invest=parameters['max_money_to_invest'],
-        max_level=parameters['max_level'],
-        min_level=parameters['min_level'],
-        return_type=parameters['return_type'],
-        money_mode=parameters['money_mode'],
-        parameters={
-            k: v for k, v in parameters.items() if k not in BotBaseParameters.__annotations__
-        }
-    )
-
-    db.add(bot)
-    db.commit()
-
-    return bot.id
-
-
-async def try_to_add_pair_to_db(stock_name: str, db: Session) -> bool:
-    if db.query(Stock).filter(Stock.name == stock_name).first():
-        return False
-
-    pair = Stock(name=stock_name)
-    db.add(pair)
-    db.commit()
-
-    return True
-
-
-async def remove_pair_from_db(stock_name: str, db: Session) -> bool:
-    pair = db.query(Stock).filter(Stock.name == stock_name).first()
-
-    if not pair:
-        return False
-    # pair_id = pair.id
-    # maybe add logic for deleting klines
-
-    db.delete(pair)
-    db.commit()
-
-    return True
-
-
-async def register_pair(pair: str, db: Session) -> bool:
-    pair_added = await try_to_add_pair_to_db(pair, db)
-    print('pair_added:', pair_added)
-
-    response = requests.post(f'{DATA_API_URI}/api/add-pair/{pair}')
-    if response.status_code != 200:
-        print('NOOOOOOOOOOOOOOOOOOOOOO')
-        await remove_pair_from_db(pair, db)
-        raise HTTPException(status_code=response.status_code, detail=response.json()['detail'])
-
-    print('RESPONSE FROM DATA API', response.json())
-
-    return pair_added
-
-
-async def unregister_pair(pair: str, db: Session):
-    removed = await remove_pair_from_db(pair, db)
-    if not removed:
-        raise HTTPException(status_code=500, detail=f'Pair {pair} is not found in db')
-
-    response = requests.post(f'{DATA_API_URI}/api/remove-pair/{pair}')
-    if response.status_code != 200:
-        raise HTTPException(status_code=response.status_code, detail=response.json()['detail'])
-
-
-async def create_specific_bot(BotParameters: Type[TrendFollowingBotParameters | DCABotParameters
-                                                  | GridBotParameters | ReinforcementBotParameters],
-                              bot_type_name: Literal['trend-following-bot', 'dca-bot', 'grid-bot', 'reinforcement-bot'],
-                              BotClass: Type[TrendFollowingBot | DCABot | GridBot | ReinforcementBot],
-                              body: dict,
-                              pool: Pool,
-                              db: Session) -> int:
-    parameters = validate_body(BotParameters, body)
-
-    registered = await register_pair(parameters['pair'], db)
-    print('registered', registered)
-
-    bot_id = await save_bot_to_db(bot_type_name, parameters, db)
-    parameters['id'] = bot_id
-
-    try:
-        bot = create_finally_specific_bot(BotClass, parameters)
-    except Exception as e:
-        print('BOT IS NOT CREATED', e)
-        if registered:
-            await unregister_pair(parameters['pair'], db)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Bot is not started. {e}')
-
-    print(bot)
-    bot.start()
-    pool.add(parameters['pair'], bot)
-    return bot_id
 
 
 @bot_router.post("/create/{bot_type_name}")

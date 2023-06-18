@@ -55,7 +55,6 @@ async def new_ticks(pair: str = Form(...), time: str = Form(...), open: str = Fo
     db.commit()
 
     # Wake up models
-    print("WAKE UP BOTS")
     pool.run_bots(pair, parse_float(close))
 
-    return {'message': 'Successfully added new_tick and run bots.'}
+    return {'message': 'Successfully added new_tick and run bots'}
