@@ -1,3 +1,4 @@
+import logging
 from typing import Literal, Type
 from fastapi import status, HTTPException
 from sqlalchemy.orm.session import Session
@@ -15,20 +16,11 @@ from api.bot.db_stuff import add_bot_to_db
 from api.bot.data_api_stuff import register_pair, unregister_pair
 
 
-def create_bot(BotClass, parameters: dict) -> TrendFollowingBot | DCABotParameters \
-                                              | GridBotParameters | ReinforcementBotParameters:
-    try:
-        bot = BotClass(**parameters)
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'{e}')
-
-    return bot
-
-
 async def start_bot_and_register_pair(bot: TrendFollowingBot | DCABotParameters | GridBotParameters | ReinforcementBotParameters,
                                       pool: Pool,
                                       pair: str,
                                       db: Session) -> None:
+    logging.info(f'Start bot and register pair | bot.id={bot.id} pair={pair}')
     await register_pair(pair, db)
     bot.start()
     pool.add(pair, bot)
@@ -41,12 +33,11 @@ async def create_specific_bot(BotParameters: Type[TrendFollowingBotParameters | 
                               body: dict,
                               pool: Pool,
                               db: Session) -> int:
+    logging.info(f'Try to create specific {bot_type_name} bot')
+
     parameters = validate_bot_parameters_body(BotParameters, body)
 
-    try:
-        bot = create_bot(BotClass, parameters)
-    except (Exception, HTTPException) as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'Bot is not started. {e}')
+    bot = BotClass(**parameters)
 
     bot_id = await add_bot_to_db(bot_type_name, parameters, db)
     parameters['id'] = bot_id

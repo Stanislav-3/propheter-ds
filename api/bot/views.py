@@ -1,3 +1,4 @@
+import logging
 from typing import Literal, Type
 from fastapi import APIRouter, Request, Depends, status, HTTPException
 from sqlalchemy.orm.exc import UnmappedInstanceError
@@ -24,18 +25,23 @@ async def create_bot(request: Request,
                      bot_type_name: Literal['trend-following-bot', 'dca-bot', 'grid-bot', 'reinforcement-bot'],
                      pool: Pool = Depends(get_pool),
                      db: Session = Depends(get_db)):
+    logging.info(f'Create bot view | bot_type_name={bot_type_name}')
     body = dict(await request.form())
 
     if bot_type_name == 'trend-following-bot':
-        bot_id = await create_specific_bot(TrendFollowingBotParameters, bot_type_name, TrendFollowingBot, body, pool, db)
+        bot_id = await create_specific_bot(TrendFollowingBotParameters, bot_type_name,
+                                           TrendFollowingBot, body, pool, db)
     elif bot_type_name == 'dca-bot':
         bot_id = await create_specific_bot(DCABotParameters, bot_type_name, DCABot, body, pool, db)
     elif bot_type_name == 'grid-bot':
         bot_id = await create_specific_bot(GridBotParameters, bot_type_name, GridBot, body, pool, db)
     elif bot_type_name == 'reinforcement-bot':
-        bot_id = await create_specific_bot(ReinforcementBotParameters, bot_type_name, ReinforcementBot, body, pool, db)
+        bot_id = await create_specific_bot(ReinforcementBotParameters, bot_type_name,
+                                           ReinforcementBot, body, pool, db)
     else:
         raise ValueError(f'Unknown bot_type_name={bot_type_name}')
+
+    logging.info(f'Successfully created {bot_type_name} bot with id={bot_id}')
 
     return {'bot_id': bot_id, 'message': f'Bot with bot_type_name={bot_type_name} is successfully created'}
 

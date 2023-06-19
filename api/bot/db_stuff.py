@@ -1,3 +1,4 @@
+import logging
 from typing import Literal
 from sqlalchemy.orm.session import Session
 from sqlalchemy.orm.exc import UnmappedInstanceError
@@ -9,6 +10,8 @@ from api.bot.request_parameters import BotBaseParameters
 async def add_bot_to_db(bot_type_name: Literal['trend-following-bot', 'dca-bot', 'grid-bot', 'reinforcement-bot'],
                         parameters: dict,
                         db: Session) -> int:
+    logging.info('Add bot to db')
+
     bot_type_id = db.query(BotType).filter(BotType.name == bot_type_name).first().id
     stock_id = db.query(Stock).filter(Stock.name == parameters['pair']).first().id
 
@@ -32,19 +35,26 @@ async def add_bot_to_db(bot_type_name: Literal['trend-following-bot', 'dca-bot',
 
 
 async def add_pair_to_db(stock_name: str, db: Session) -> bool:
+    logging.info(f'Try to add pair {stock_name} to db')
+
     if db.query(Stock).filter(Stock.name == stock_name).first():
+        logging.info(f'Pair {stock_name} already exists in db')
         return False
 
     pair = Stock(name=stock_name)
     db.add(pair)
     db.commit()
 
+    logging.info(f'Successfully added pair {stock_name} to db')
     return True
 
 
 async def remove_pair_and_klines_from_db(stock_name: str, db: Session) -> None:
+    logging.info(f'Remove pair {stock_name} and its klines from db')
+
     pair = db.query(Stock).filter(Stock.name == stock_name).first()
     if not pair:
+        logging.info(f'Pair {stock_name} doesn\'t exist in db')
         return
 
     db.delete(db.query(Kline).filter(Kline.stock_id == pair.id))
@@ -53,6 +63,8 @@ async def remove_pair_and_klines_from_db(stock_name: str, db: Session) -> None:
 
 
 async def activate_bot(bot_id: int, db: Session):
+    logging.info(f'Set bot with id={bot_id} is_active={True}')
+
     bot = db.query(Bot).get(bot_id)
     try:
         bot.is_active = True

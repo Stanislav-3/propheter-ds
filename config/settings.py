@@ -1,4 +1,6 @@
 import os
+import logging
+import logging.config
 from dotenv import load_dotenv, find_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
@@ -40,3 +42,56 @@ def get_db() -> Generator:
 
 
 Base: DeclarativeMeta = declarative_base()
+
+
+LOGGING_CONFIG = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+        },
+    },
+    'handlers': {
+        'default': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard',
+            'stream': 'ext://sys.stdout',  # Default is stderr
+        },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'formatter': 'standard',
+            'filename': 'app.log',
+            'mode': 'a',
+        },
+    },
+    'root': {  # root logger
+        'handlers': ['default', 'file'],
+        'level': 'INFO',
+        'propagate': False
+    },
+    'loggers': {
+            'uvicorn.error': {
+                'level': 'INFO',
+                'handlers': ['default', 'file'],
+                'propagate': True,
+            },
+            'uvicorn.access': {
+                'level': 'INFO',
+                'handlers': ['default', 'file'],
+                'propagate': True,
+            },
+            # 'fastapi': {
+            #     'level': 'INFO',
+            #     'handlers': ['default', 'file'],
+            #     'propagate': True,
+            # },
+    }
+}
+
+
+logging.config.dictConfig(LOGGING_CONFIG)
+
+
