@@ -20,6 +20,11 @@ from api.bot.db_stuff import activate_bot
 bot_router = APIRouter(prefix='/bot')
 
 
+@bot_router.get('/exc')
+async def raise_exception():
+    raise Exception(30 * 'THIS IS THE EXCEPTION!!!!!!!!!!!!!!!\n')
+
+
 @bot_router.post("/create/{bot_type_name}")
 async def create_bot(request: Request,
                      bot_type_name: Literal['trend-following-bot', 'dca-bot', 'grid-bot', 'reinforcement-bot'],
