@@ -72,11 +72,11 @@ LOGGING_CONFIG = {
         'propagate': False
     },
     'loggers': {
-            'uvicorn': {
-                'level': 'INFO',
-                'handlers': ['default', 'file'],
-                'propagate': True,
-            },
+            # 'uvicorn': {
+            #     'level': 'INFO',
+            #     'handlers': ['default', 'file'],
+            #     'propagate': True,
+            # },
             'uvicorn.error': {
                 'level': 'INFO',
                 'handlers': ['default', 'file'],

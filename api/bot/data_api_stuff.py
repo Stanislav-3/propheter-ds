@@ -7,7 +7,7 @@ from config.settings import DATA_API_URI
 from api.bot.db_stuff import add_pair_to_db, remove_pair_and_klines_from_db
 
 
-async def register_pair(pair: str, db: Session) -> bool:
+async def try_to_register_pair(pair: str, db: Session) -> bool:
     logging.info(f'Try to register pair={pair}')
 
     is_added = await add_pair_to_db(pair, db)
@@ -15,7 +15,7 @@ async def register_pair(pair: str, db: Session) -> bool:
         logging.info(f'Pair={pair} is already registered')
         return False
 
-    # Ticks are not being received yet
+    # Register pair on data api
     response = requests.post(f'{DATA_API_URI}/api/add-pair/{pair}')
     if response.status_code != 200:
         await remove_pair_and_klines_from_db(pair, db)

@@ -13,17 +13,7 @@ from api.bot.request_parameters import (TrendFollowingBotParameters, DCABotParam
                                         GridBotParameters, ReinforcementBotParameters)
 from api.bot.validation import validate_bot_parameters_body
 from api.bot.db_stuff import add_bot_to_db
-from api.bot.data_api_stuff import register_pair, unregister_pair
-
-
-async def start_bot_and_register_pair(bot: TrendFollowingBot | DCABotParameters | GridBotParameters | ReinforcementBotParameters,
-                                      pool: Pool,
-                                      pair: str,
-                                      db: Session) -> None:
-    logging.info(f'Start bot and register pair | bot.id={bot.id} pair={pair}')
-    await register_pair(pair, db)
-    bot.start()
-    pool.add(pair, bot)
+from api.bot.data_api_stuff import try_to_register_pair, unregister_pair
 
 
 async def create_specific_bot(BotParameters: Type[TrendFollowingBotParameters | DCABotParameters
@@ -35,13 +25,21 @@ async def create_specific_bot(BotParameters: Type[TrendFollowingBotParameters | 
                               db: Session) -> int:
     logging.info(f'Try to create specific {bot_type_name} bot')
 
+    # Validate body
     parameters = validate_bot_parameters_body(BotParameters, body)
 
+    # Register pair if it's not registered yet
+    await try_to_register_pair(parameters['pair'], db)
+
+    # Add bot to db
     bot_id = await add_bot_to_db(bot_type_name, parameters, db)
     parameters['id'] = bot_id
 
+    # Create bot
     bot = BotClass(**parameters)
+    bot.start()
 
-    await start_bot_and_register_pair(bot, pool, parameters['pair'], db)
+    # Adding bot to Pool
+    pool.add(parameters['pair'], bot)
 
     return bot_id

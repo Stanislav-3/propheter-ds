@@ -13,7 +13,7 @@ from algorithms.bots.reinforcement import ReinforcementBot
 from config.settings import get_db
 from api.bot.request_parameters import (TrendFollowingBotParameters,
                                         DCABotParameters, GridBotParameters, ReinforcementBotParameters)
-from api.bot.bot_stuff import create_specific_bot, start_bot_and_register_pair
+from api.bot.bot_stuff import create_specific_bot
 from api.bot.db_stuff import activate_bot
 
 
@@ -52,7 +52,7 @@ async def start_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = D
         await activate_bot(bot_id, db)
 
         bot = pool.get_bot(bot_id)
-        start_bot_and_register_pair(bot, pool, pair, db)
+        # start_bot_and_register_pair(bot, pool, pair, db)
     except (Exception, UnmappedInstanceError, HTTPException) as e:
         raise HTTPException(404, detail=str(e))
 
