@@ -32,11 +32,12 @@ class Pool:
         logging.info(f"Successfully added new stock to pool. Pool={self.stock_bots_mapping}")
 
     def remove(self, stock_name, bot):
-        #  TODO: think about that
-        self.stock_bots_mapping[stock_name].remove(bot)
-
-        if len(self.stock_bots_mapping[stock_name]) == 0:
-            del self.stock_bots_mapping[stock_name]
+        # #  TODO: think about that
+        # self.stock_bots_mapping[stock_name].remove(bot)
+        #
+        # if len(self.stock_bots_mapping[stock_name]) == 0:
+        #     del self.stock_bots_mapping[stock_name]
+        pass
 
     def run_bots(self, stock_name: str, new_price: float):
         logging.info(f'Pool.run_bots() | stock_bots_mapping={self.stock_bots_mapping}')
