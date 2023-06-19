@@ -10,8 +10,8 @@ from api.bot.db_stuff import add_pair_to_db, remove_pair_and_klines_from_db
 async def try_to_register_pair(pair: str, db: Session) -> bool:
     logging.info(f'Try to register pair={pair}')
 
-    is_added = await add_pair_to_db(pair, db)
-    if not is_added:
+    is_newly_registered = await add_pair_to_db(pair, db)
+    if not is_newly_registered:
         logging.info(f'Pair={pair} is already registered')
         return False
 

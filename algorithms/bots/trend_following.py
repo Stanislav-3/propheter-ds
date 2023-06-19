@@ -107,8 +107,10 @@ class TrendFollowingBot(BotBase):
 
         if not self.invested_in_pair and self.fast_sma > self.slow_sma:
             self.buy(self.max_money_to_invest)
+            self.invested_in_pair = True
         elif self.invested_in_pair and self.fast_sma < self.slow_sma:
             self.sell(self.max_money_to_invest)
+            self.invested_in_pair = False
 
         self.verbose_price(new_price)
 

@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from enum import Enum
 
@@ -64,7 +65,7 @@ class BotBase(ABC):
             raise BotModeIsNotConfiguredError(f'Money mode of bot "{self.__class__.__name__}" is not configured')
 
     def buy(self, price: float):
-        print('BUY')
+        logging.info('BUY')
         if self.money_mode == BotMoneyMode.PAPER:
             self.paper_money *= price
 
@@ -73,7 +74,7 @@ class BotBase(ABC):
             pass
 
     def sell(self, price: float):
-        print('SELL')
+        logging.info('SELL')
         if self.money_mode == BotMoneyMode.PAPER:
             self.paper_money /= price
         elif self.money_mode == BotMoneyMode.REAL:

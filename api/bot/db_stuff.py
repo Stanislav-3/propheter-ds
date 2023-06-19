@@ -37,7 +37,10 @@ async def add_bot_to_db(bot_type_name: Literal['trend-following-bot', 'dca-bot',
 async def add_pair_to_db(stock_name: str, db: Session) -> bool:
     logging.info(f'Try to add pair {stock_name} to db')
 
-    if db.query(Stock).filter(Stock.name == stock_name).first():
+    existing_stock = db.query(Stock).filter(Stock.name == stock_name).first()
+    logging.info(f'Existed stock: {existing_stock}')
+
+    if existing_stock:
         logging.info(f'Pair {stock_name} already exists in db')
         return False
 
