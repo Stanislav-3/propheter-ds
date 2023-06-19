@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Request, Form, Depends, HTTPException, status
 from sqlalchemy.orm.session import Session
 from pydantic import BaseModel
@@ -53,7 +55,6 @@ async def new_ticks(pair: str = Form(...), time: str = Form(...), open: str = Fo
 
     db.add(kline)
     db.commit()
-
     # Wake up models
     pool.run_bots(pair, parse_float(close))
 

@@ -1,5 +1,4 @@
 import os
-import logging
 import logging.config
 from dotenv import load_dotenv, find_dotenv
 from sqlalchemy import create_engine
@@ -73,6 +72,11 @@ LOGGING_CONFIG = {
         'propagate': False
     },
     'loggers': {
+            'uvicorn': {
+                'level': 'INFO',
+                'handlers': ['default', 'file'],
+                'propagate': True,
+            },
             'uvicorn.error': {
                 'level': 'INFO',
                 'handlers': ['default', 'file'],
@@ -83,11 +87,6 @@ LOGGING_CONFIG = {
                 'handlers': ['default', 'file'],
                 'propagate': True,
             },
-            # 'fastapi': {
-            #     'level': 'INFO',
-            #     'handlers': ['default', 'file'],
-            #     'propagate': True,
-            # },
     }
 }
 

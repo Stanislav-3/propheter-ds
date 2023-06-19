@@ -37,10 +37,10 @@ async def create_specific_bot(BotParameters: Type[TrendFollowingBotParameters | 
 
     parameters = validate_bot_parameters_body(BotParameters, body)
 
-    bot = BotClass(**parameters)
-
     bot_id = await add_bot_to_db(bot_type_name, parameters, db)
     parameters['id'] = bot_id
+
+    bot = BotClass(**parameters)
 
     await start_bot_and_register_pair(bot, pool, parameters['pair'], db)
 
