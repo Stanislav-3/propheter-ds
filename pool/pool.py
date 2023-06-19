@@ -23,10 +23,13 @@ class Pool:
     def add(self, stock_name: str, bot: BotBase):
         try:
             self.stock_bots_mapping[stock_name].append(bot)
+            logging.info('bot appended to pool')
         except KeyError:
+            logging.info('try to add new bot pool')
             self.stock_bots_mapping[stock_name] = [bot]
+            logging.info('new bot added to pool')
 
-        logging.info("Successfully added new stock to pool")
+        logging.info(f"Successfully added new stock to pool. Pool={self.stock_bots_mapping}")
 
     def remove(self, stock_name, bot):
         #  TODO: think about that
