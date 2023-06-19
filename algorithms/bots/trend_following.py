@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import pandas as pd
 import pandera as pa
@@ -75,6 +77,8 @@ class TrendFollowingBot(BotBase):
             self.fast_window = best_moving_windows.fast_window
 
     def step(self, new_price: int) -> None:
+        logging.info(f'Bot.step() with id={self.id}')
+
         if self.status == BotStatus.LOADING:
             self.loading_step(new_price)
         elif self.status == BotStatus.RUNNING:

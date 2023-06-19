@@ -11,6 +11,6 @@ def validate_bot_parameters_body(BotParameters: Type[TrendFollowingBotParameters
     try:
         parameters = parse_obj_as(BotParameters, body).dict()
     except ValidationError as e:
-        raise ValueError(str(e))
+        raise ValueError('Validation error. ' + str(e))
 
     return parameters

@@ -1,3 +1,5 @@
+import logging
+
 from exceptions.pool_exceptions import PoolExistsError
 from algorithms.bots.base import BotBase
 from algorithms.bots.trend_following import TrendFollowingBot
@@ -19,14 +21,12 @@ class Pool:
         self.stock_bots_mapping = {}
 
     def add(self, stock_name: str, bot: BotBase):
-        print("TRY TO ADD NEW STOCK TO MAPPING IN POOL")
         try:
             self.stock_bots_mapping[stock_name].append(bot)
         except KeyError:
-            print("ADD NEW STOCK TO MAPPING IN POOL")
             self.stock_bots_mapping[stock_name] = [bot]
-        except Exception as e:
-            print('OTHER EXCEPTION', e)
+
+        logging.info("Successfully added new stock to pool")
 
     def remove(self, stock_name, bot):
         #  TODO: think about that
@@ -36,9 +36,10 @@ class Pool:
             del self.stock_bots_mapping[stock_name]
 
     def run_bots(self, stock_name: str, new_price: float):
-        # TODO: THINK ABOUT BOTS IN TERMS OF PARALLELISM
+        logging.info(f'Pool.run_bots() | stock_bots_mapping={self.stock_bots_mapping}')
         bots = self.stock_bots_mapping[stock_name]
 
+        # TODO: THINK ABOUT BOTS IN TERMS OF PARALLELISM
         for bot in bots:
             bot.step(new_price)
 

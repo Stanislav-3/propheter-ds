@@ -42,4 +42,5 @@ async def create_specific_bot(BotParameters: Type[TrendFollowingBotParameters | 
     # Adding bot to Pool
     pool.add(parameters['pair'], bot)
 
+
     return bot_id

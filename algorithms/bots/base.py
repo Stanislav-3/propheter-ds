@@ -33,11 +33,15 @@ class BotAction(Enum):
 
 class BotBase(ABC):
     def __init__(self):
+        self.id = None
         self.status = BotStatus.LOADING
         self.money_mode = BotMoneyMode.NOT_CONFIGURED
         self.paper_money = 1000
         self.pair = None
         self.invested_in_pair = False
+
+    def __repr__(self):
+        return f'Name = {self.__class__.__name__}, id={self.id}'
 
     @abstractmethod
     def start(self) -> None:
