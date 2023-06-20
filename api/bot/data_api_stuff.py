@@ -35,3 +35,12 @@ async def unregister_pair(pair: str, db: Session):
     if response.status_code != 200:
         raise Exception(f'Post request to {DATA_API_URI}/api/remove-pair/{pair} gave response '
                         f'with status_code={response.status_code}')
+
+
+async def unregister_only_pair_on_dataapi(pair: str):
+    logging.info(f'Try to unregister only pair={pair} on dataapi')
+
+    response = requests.post(f'{DATA_API_URI}/api/remove-pair/{pair}')
+    if response.status_code != 200:
+        raise Exception(f'Post request to {DATA_API_URI}/api/remove-pair/{pair} gave response '
+                        f'with status_code={response.status_code}')

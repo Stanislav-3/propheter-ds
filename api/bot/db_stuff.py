@@ -52,6 +52,18 @@ async def add_pair_to_db(stock_name: str, db: Session) -> bool:
     return True
 
 
+async def remove_klines_from_db(stock_name: str, db: Session) -> None:
+    logging.info(f'Remove klines of pair={stock_name} from db')
+
+    pair = db.query(Stock).filter(Stock.name == stock_name).first()
+    if not pair:
+        logging.info(f'Pair {stock_name} doesn\'t exist in db')
+        return
+
+    db.query(Kline).filter(Kline.stock_id == pair.id).delete()
+    db.commit()
+
+
 async def remove_pair_and_klines_from_db(stock_name: str, db: Session) -> None:
     logging.info(f'Remove pair {stock_name} and its klines from db')
 

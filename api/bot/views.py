@@ -14,7 +14,8 @@ from config.settings import get_db
 from api.bot.request_parameters import (TrendFollowingBotParameters,
                                         DCABotParameters, GridBotParameters, ReinforcementBotParameters)
 from api.bot.bot_stuff import create_specific_bot
-from api.bot.data_api_stuff import try_to_register_pair, unregister_pair
+from api.bot.data_api_stuff import try_to_register_pair, unregister_pair, unregister_only_pair_on_dataapi
+from api.bot.db_stuff import remove_klines_from_db
 
 
 bot_router = APIRouter(prefix='/bot')
@@ -89,13 +90,13 @@ async def stop_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = De
     logging.info(f'View stop bot with id={bot_id}')
 
     # Stop bot in db
-    bot = db.query(Bot).filter(Bot.id == bot_id)
+    bot = db.query(Bot).get(bot_id)
     if not bot:
         logging.info(f'Bot with id={bot_id} is not found in the db')
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail=f'Bot with id={bot_id} is not found in db. \n'
                                    f'In Pool bot={pool.get_bot(bot_id)}')
-    bot.update({'is_active': False})
+    bot.is_active = False
     db.commit()
     pair_id = bot.first().stock_id
     logging.info(f'Successfully stopped bot with id={bot_id} in db')
@@ -113,7 +114,8 @@ async def stop_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = De
     if db.query(Bot).filter(Bot.stock_id == pair_id)\
             .filter(Bot.is_active == True).count() == 0:
         pair = db.query(Stock).filter(Stock.id == pair_id).first().name
-        await unregister_pair(pair, db)
+        await remove_klines_from_db(pair, db)
+        await unregister_only_pair_on_dataapi(pair)
         logging.info(f'Successfully unregister pair with id={pair_id} name={pair}')
     else:
         logging.info(f'Did not try to unregister pair with id={pair_id}')
