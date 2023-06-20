@@ -110,7 +110,8 @@ async def stop_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = De
     logging.info(f'Successfully stopped bot with id={bot_id} in pool')
 
     # Unregister pair if no bot is using it
-    if db.query(Bot).filter(Bot.stock_id == pair_id).count() == 0:
+    if db.query(Bot).filter(Bot.stock_id == pair_id)\
+            .filter(Bot.is_active == True).count() == 0:
         pair = db.query(Stock).filter(Stock.id == pair_id).first().name
         await unregister_pair(pair, db)
         logging.info(f'Successfully unregister pair with id={pair_id} name={pair}')
