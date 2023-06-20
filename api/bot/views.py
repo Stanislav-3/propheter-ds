@@ -98,7 +98,7 @@ async def stop_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = De
                                    f'In Pool bot={pool.get_bot(bot_id)}')
     bot.is_active = False
     db.commit()
-    pair_id = bot.first().stock_id
+    pair_id = bot.stock_id
     logging.info(f'Successfully stopped bot with id={bot_id} in db')
 
     # Stop bot in a pool
