@@ -76,3 +76,37 @@ class Pool:
                     return bot
 
         return None
+
+    def find_bot(self, pair: str, bot_id: int) -> None or TrendFollowingBot:
+        # get bots on pair
+        bots = self.stock_bots_mapping.get(pair)
+        if bots is None:
+            logging.info(f'There is no bots on pair {pair}')
+            return None
+
+        for bot in bots:
+            if bot.id == bot_id:
+                logging.info(f'Found bot {bot}')
+                return bot
+
+        return None
+
+    def start_bot(self, pair: str, bot_id: int) -> bool:
+        logging.info(f'Pool.start_bot(pair={pair}, bot_id={bot_id})')
+
+        bot = self.find_bot(pair, bot_id)
+        if bot is None:
+            return False
+
+        bot.start()
+        return True
+
+    def stop_bot(self, pair: str, bot_id: int) -> bool:
+        logging.info(f'Pool.start_bot(pair={pair}, bot_id={bot_id})')
+
+        bot = self.find_bot(pair, bot_id)
+        if bot is None:
+            return False
+
+        bot.stop()
+        return True

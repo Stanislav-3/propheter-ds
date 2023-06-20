@@ -50,14 +50,38 @@ async def create_bot(request: Request,
 
 @bot_router.post("/start/{bot_id}")
 async def start_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = Depends(get_db)):
-    try:
-        await activate_bot(bot_id, db)
+    logging.info(f'View start bot with id={bot_id}')
 
-        bot = pool.get_bot(bot_id)
-        # start_bot_and_register_pair(bot, pool, pair, db)
-    except (Exception, UnmappedInstanceError, HTTPException) as e:
-        raise HTTPException(404, detail=str(e))
+    # Start bot in db
+    bot = db.query(Bot).get(bot_id)
+    if not bot:
+        logging.info(f'Bot with id={bot_id} is not found in the db')
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=f'Bot with id={bot_id} is not found in db. \n'
+                                   f'In Pool bot={pool.get_bot(bot_id)}')
 
+    bot.is_active = True
+    db.commit()
+    pair_id = bot.stock_id
+
+    # Start bot in a pool
+    pair = db.query(Stock).filter(Stock.id == pair_id).first().name
+    is_started = pool.start_bot(pair, bot_id)
+    if not is_started:
+        logging.info(f'Bot with id={bot_id} is not found in the pool')
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=f'Bot with id={bot_id} is not found in pool')
+    logging.info(f'Successfully started bot with id={bot_id} in pool')
+
+    # Register pair if no bot is using it
+    if db.query(Bot).filter(Bot.stock_id == pair_id).count() == 0:
+        pair = db.query(Stock).filter(Stock.id == pair_id).first().name
+        await unregister_pair(pair, db)
+        logging.info(f'Successfully unregister pair with id={id} name={pair}')
+    else:
+        logging.info(f'Did not try to register pair with id={id}')
+
+    logging.info(f'Bot with id={bot_id} is successfully started')
     return {'message': f'Bot with id={bot_id} is successfully started'}
 
 
@@ -77,22 +101,22 @@ async def stop_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = De
     pair_id = bot.stock_id
     logging.info(f'Successfully stopped bot with id={bot_id} in db')
 
-    # Stop bot in pool
-    bot = pool.get_bot(bot_id)
-    if not bot:
+    # Stop bot in a pool
+    pair = db.query(Stock).filter(Stock.id == pair_id).first().name
+    is_stopped = pool.stop_bot(pair, bot_id)
+    if not is_stopped:
         logging.info(f'Bot with id={bot_id} is not found in the pool')
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail=f'Bot with id={bot_id} is not found in pool')
-    bot.stop()
     logging.info(f'Successfully stopped bot with id={bot_id} in pool')
 
     # Unregister pair if no bot is using it
     if db.query(Bot).filter(Bot.stock_id == pair_id).count() == 0:
         pair = db.query(Stock).filter(Stock.id == pair_id).first().name
         await unregister_pair(pair, db)
-        logging.info(f'Successfully unregister pair with id={id} name={pair}')
+        logging.info(f'Successfully unregister pair with id={pair_id} name={pair}')
     else:
-        logging.info(f'Did not try to unregister pair with id={id}')
+        logging.info(f'Did not try to unregister pair with id={pair_id}')
 
     logging.info(f'Successfully stopped bot with id={bot_id}')
     return {'message': f'Bot with id={bot_id} is successfully stopped'}
@@ -116,8 +140,8 @@ async def delete_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = 
 
     # Delete bot from Pool
     pair = db.query(Stock).filter(Stock.id == pair_id).first().name
-    deleted = pool.remove(pair, bot_id)
-    if not deleted:
+    is_deleted = pool.remove(pair, bot_id)
+    if not is_deleted:
         logging.info(f'Bot with id={bot_id} is not found in the pool')
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail=f'Bot with id={bot_id} is not found in pool')
@@ -126,9 +150,9 @@ async def delete_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = 
     # Unregister pair if no bot is using it
     if db.query(Bot).filter(Bot.stock_id == pair_id).count() == 0:
         await unregister_pair(pair, db)
-        logging.info(f'Successfully unregister pair with id={id} name={pair}')
+        logging.info(f'Successfully unregister pair with id={pair_id} name={pair}')
     else:
-        logging.info(f'Did not try to unregister pair with id={id}')
+        logging.info(f'Did not try to unregister pair with id={pair_id}')
 
     logging.info(f'Successfully deleted bot with id={bot_id}')
     return {'message': f'Successfully deleted bot with id={bot_id}'}
