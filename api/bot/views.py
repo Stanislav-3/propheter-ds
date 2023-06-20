@@ -73,9 +73,9 @@ async def start_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = D
                             detail=f'Bot with id={bot_id} is not found in pool')
     logging.info(f'Successfully started bot with id={bot_id} in pool')
 
-    # Register pair if no bot is using it
+    # Register pair if no other bot is using it
     if db.query(Bot).filter(Bot.stock_id == pair_id)\
-            .filter(Bot.is_active == True).count() == 0:
+            .filter(Bot.is_active == True).count() == 1:
         pair = db.query(Stock).filter(Stock.id == pair_id).first().name
         await register_pair_on_data_api(pair)
         logging.info(f'Successfully register pair with id={id} name={pair}')
