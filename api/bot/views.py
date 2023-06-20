@@ -68,25 +68,38 @@ async def start_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = D
 # todo: think of logic when some inconsistency happened (and could it really happen? should it be considered then?)
 @bot_router.post("/stop/{bot_id}")
 async def stop_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = Depends(get_db)):
-    errors_detail = []
-    errors_detail_separator = '\n'
+    logging.info(f'View stop bot with id={bot_id}')
 
+    # Stop bot in db
     bot = db.query(Bot).get(bot_id)
-    try:
-        bot.is_active = False
-        db.commit()
-    except UnmappedInstanceError:
-        errors_detail.append(f'Bot with id={bot_id} is not found in the database')
+    if not bot:
+        logging.info(f'Bot with id={bot_id} is not found in the db')
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=f'Bot with id={bot_id} is not found in db. \n'
+                                   f'In Pool bot={pool.get_bot(bot_id)}')
+    bot.is_active = False
+    db.commit()
+    pair_id = bot.stock_id
+    logging.info(f'Successfully stopped bot with id={bot_id} in db')
 
+    # Stop bot in pool
     bot = pool.get_bot(bot_id)
-    if bot:
-        bot.stop()
+    if not bot:
+        logging.info(f'Bot with id={bot_id} is not found in the pool')
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=f'Bot with id={bot_id} is not found in pool')
+    bot.stop()
+    logging.info(f'Successfully stopped bot with id={bot_id} in pool')
+
+    # Unregister pair if no bot is using it
+    if db.query(Bot).filter(Bot.stock_id == pair_id).count() == 0:
+        pair = db.query(Stock).filter(Stock.id == pair_id).first().name
+        await unregister_pair(pair, db)
+        logging.info(f'Successfully unregister pair with id={id} name={pair}')
     else:
-        errors_detail.append(f'Bot with id={bot_id} is not found in the pool')
+        logging.info(f'Did not try to unregister pair with id={id}')
 
-    if errors_detail:
-        raise HTTPException(404, detail=errors_detail_separator.join(errors_detail))
-
+    logging.info(f'Successfully stopped bot with id={bot_id}')
     return {'message': f'Bot with id={bot_id} is successfully stopped'}
 
 
@@ -96,23 +109,23 @@ async def delete_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = 
 
     # Delete bot from db
     bot = db.query(Bot).get(bot_id)
-    try:
-        db.delete(bot)
-        pair_id = bot.stock_id
-        db.commit()
-    except UnmappedInstanceError:
+    if not bot:
+        logging.info(f'Bot with id={bot_id} is not found in the db')
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail=f'Bot with id={bot_id} is not found in db. \n'
                                    f'In Pool bot={pool.get_bot(bot_id)}')
+    db.delete(bot)
+    db.commit()
+    pair_id = bot.stock_id
     logging.info(f'Successfully deleted bot with id={bot_id} from db')
 
     # Delete bot from Pool
     bot = pool.get_bot(bot_id)
-    if bot:
-        del bot
-    else:
+    if not bot:
+        logging.info(f'Bot with id={bot_id} is not found in the pool')
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail=f'Bot with id={bot_id} is not found in pool')
+    del bot
     logging.info(f'Successfully deleted bot with id={bot_id} from pool')
 
     # Unregister pair if no bot is using it
