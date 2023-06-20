@@ -14,8 +14,8 @@ from config.settings import get_db
 from api.bot.request_parameters import (TrendFollowingBotParameters,
                                         DCABotParameters, GridBotParameters, ReinforcementBotParameters)
 from api.bot.bot_stuff import create_specific_bot
-from api.bot.data_api_stuff import try_to_register_pair, unregister_pair, unregister_only_pair_on_dataapi
-from api.bot.db_stuff import remove_klines_from_db
+from api.bot.data_api_stuff import register_pair_on_data_api, unregister_pair_on_data_api
+from api.bot.db_stuff import remove_klines_from_db, remove_pair_and_klines_from_db
 
 
 bot_router = APIRouter(prefix='/bot')
@@ -74,12 +74,13 @@ async def start_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = D
     logging.info(f'Successfully started bot with id={bot_id} in pool')
 
     # Register pair if no bot is using it
-    if db.query(Bot).filter(Bot.stock_id == pair_id).count() == 0:
+    if db.query(Bot).filter(Bot.stock_id == pair_id)\
+            .filter(Bot.is_active == True).count() == 0:
         pair = db.query(Stock).filter(Stock.id == pair_id).first().name
-        await unregister_pair(pair, db)
-        logging.info(f'Successfully unregister pair with id={id} name={pair}')
+        await register_pair_on_data_api(pair, db)
+        logging.info(f'Successfully register pair with id={id} name={pair}')
     else:
-        logging.info(f'Did not try to register pair with id={id}')
+        logging.info(f'Did not try to unregister pair with id={id}')
 
     logging.info(f'Bot with id={bot_id} is successfully started')
     return {'message': f'Bot with id={bot_id} is successfully started'}
@@ -115,7 +116,7 @@ async def stop_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = De
             .filter(Bot.is_active == True).count() == 0:
         pair = db.query(Stock).filter(Stock.id == pair_id).first().name
         await remove_klines_from_db(pair, db)
-        await unregister_only_pair_on_dataapi(pair)
+        await unregister_pair_on_data_api(pair)
         logging.info(f'Successfully unregister pair with id={pair_id} name={pair}')
     else:
         logging.info(f'Did not try to unregister pair with id={pair_id}')
@@ -151,7 +152,8 @@ async def delete_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = 
 
     # Unregister pair if no bot is using it
     if db.query(Bot).filter(Bot.stock_id == pair_id).count() == 0:
-        await unregister_pair(pair, db)
+        await unregister_pair_on_data_api(pair, db)
+        await remove_pair_and_klines_from_db(pair, db)
         logging.info(f'Successfully unregister pair with id={pair_id} name={pair}')
     else:
         logging.info(f'Did not try to unregister pair with id={pair_id}')
