@@ -1,5 +1,4 @@
 import logging
-
 import numpy as np
 import pandas as pd
 import pandera as pa
@@ -77,7 +76,7 @@ class TrendFollowingBot(BotBase):
             self.fast_window = best_moving_windows.fast_window
 
     def step(self, new_price: int) -> None:
-        logging.info(f'Bot.step() with id={self.id}')
+        logging.info(f'Step for bot={self}')
 
         if self.status == BotStatus.LOADING:
             self.loading_step(new_price)
@@ -85,9 +84,9 @@ class TrendFollowingBot(BotBase):
             self.running_step(new_price)
 
     def loading_step(self, new_price: int):
-        print('LOADING_STEP')
+        logging.info(f'Loading step for bot={self}')
+
         self.loading_prices.append(new_price)
-        print(self.loading_prices)
         
         if len(self.loading_prices) != self.slow_window:
             return 
@@ -102,6 +101,8 @@ class TrendFollowingBot(BotBase):
         self.status = BotStatus.RUNNING
 
     def running_step(self, new_price):
+        logging.info(f'Running step for bot={self}')
+
         self.slow_sma = (self.slow_sma * self.slow_window - self.oldest_slow_price + new_price) / self.slow_window
         self.fast_sma = (self.fast_sma * self.fast_window - self.oldest_fast_price + new_price) / self.fast_window
 
@@ -130,7 +131,6 @@ class TrendFollowingBot(BotBase):
         else:
             raise Exception(f'Unknown return type: {self.return_type.name}')
 
-    # todo: do it in separate process
     def search_parameters(self,
                           prices: Sequence,
                           fast_min: int,

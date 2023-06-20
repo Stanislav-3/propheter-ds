@@ -14,7 +14,6 @@ from config.settings import get_db
 from api.bot.request_parameters import (TrendFollowingBotParameters,
                                         DCABotParameters, GridBotParameters, ReinforcementBotParameters)
 from api.bot.bot_stuff import create_specific_bot
-from api.bot.db_stuff import activate_bot
 from api.bot.data_api_stuff import try_to_register_pair, unregister_pair
 
 

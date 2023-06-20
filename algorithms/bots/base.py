@@ -65,7 +65,8 @@ class BotBase(ABC):
             raise BotModeIsNotConfiguredError(f'Money mode of bot "{self.__class__.__name__}" is not configured')
 
     def buy(self, price: float):
-        logging.info('BUY')
+        logging.info(f'Buy on {self.pair} with price={price} by bot={self}')
+
         if self.money_mode == BotMoneyMode.PAPER:
             self.paper_money *= price
 
@@ -74,7 +75,8 @@ class BotBase(ABC):
             pass
 
     def sell(self, price: float):
-        logging.info('SELL')
+        logging.info(f'Sell on {self.pair} with price={price} by bot={self}')
+
         if self.money_mode == BotMoneyMode.PAPER:
             self.paper_money /= price
         elif self.money_mode == BotMoneyMode.REAL:
@@ -88,4 +90,4 @@ class BotBase(ABC):
             else:
                 money = self.paper_money
 
-            logging.info('Current paper balance:', money)
+            logging.info(f'Current paper balance for bot={self}:', money)
