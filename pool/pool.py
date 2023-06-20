@@ -61,7 +61,11 @@ class Pool:
 
     def run_bots(self, stock_name: str, new_price: float):
         logging.info(f'Pool.run_bots() | stock_bots_mapping={self.stock_bots_mapping}')
-        bots = self.stock_bots_mapping[stock_name]
+
+        bots = self.stock_bots_mapping.get(stock_name)
+        if bots is None:
+            logging.info(f'Pool.run_bots() | pair is not in the pool')
+            return
 
         # todo: add multithreading
         for bot in bots:
