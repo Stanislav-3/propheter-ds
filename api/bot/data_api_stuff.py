@@ -27,7 +27,7 @@ async def try_to_register_pair(pair: str, db: Session) -> bool:
 
 
 async def unregister_pair(pair: str, db: Session):
-    logging.info(f'Unregister pair={pair}')
+    logging.info(f'Try to unregister pair={pair}')
 
     await remove_pair_and_klines_from_db(pair, db)
 

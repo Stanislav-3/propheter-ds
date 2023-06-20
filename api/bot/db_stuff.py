@@ -60,7 +60,7 @@ async def remove_pair_and_klines_from_db(stock_name: str, db: Session) -> None:
         logging.info(f'Pair {stock_name} doesn\'t exist in db')
         return
 
-    db.delete(db.query(Kline).filter(Kline.stock_id == pair.id))
+    db.query(Kline).filter(Kline.stock_id == pair.id).delete()
     db.delete(pair)
     db.commit()
 
