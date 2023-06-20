@@ -33,7 +33,7 @@ async def create_specific_bot(BotParameters: Type[TrendFollowingBotParameters | 
     is_newly_registered = await add_pair_to_db(pair, db)
     if is_newly_registered:
         logging.info(f'Pair={pair} have not already registered')
-        await register_pair_on_data_api(pair, db)
+        await register_pair_on_data_api(pair)
     else:
         logging.info(f'Pair={pair} is already registered')
 

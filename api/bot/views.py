@@ -77,7 +77,7 @@ async def start_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = D
     if db.query(Bot).filter(Bot.stock_id == pair_id)\
             .filter(Bot.is_active == True).count() == 0:
         pair = db.query(Stock).filter(Stock.id == pair_id).first().name
-        await register_pair_on_data_api(pair, db)
+        await register_pair_on_data_api(pair)
         logging.info(f'Successfully register pair with id={id} name={pair}')
     else:
         logging.info(f'Did not try to unregister pair with id={id}')
@@ -152,7 +152,7 @@ async def delete_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = 
 
     # Unregister pair if no bot is using it
     if db.query(Bot).filter(Bot.stock_id == pair_id).count() == 0:
-        await unregister_pair_on_data_api(pair, db)
+        await unregister_pair_on_data_api(pair)
         await remove_pair_and_klines_from_db(pair, db)
         logging.info(f'Successfully unregister pair with id={pair_id} name={pair}')
     else:

@@ -7,7 +7,7 @@ from config.settings import DATA_API_URI
 from api.bot.db_stuff import add_pair_to_db, remove_pair_and_klines_from_db
 
 
-async def register_pair_on_data_api(pair: str, db: Session) -> None:
+async def register_pair_on_data_api(pair: str) -> None:
     logging.info(f'Try to register pair={pair} on data-api')
 
     response = requests.post(f'{DATA_API_URI}/api/add-pair/{pair}')
@@ -19,7 +19,7 @@ async def register_pair_on_data_api(pair: str, db: Session) -> None:
     logging.info(f'Successfully registered pair={pair}')
 
 
-async def unregister_pair_on_data_api(pair: str, db: Session) -> None:
+async def unregister_pair_on_data_api(pair: str) -> None:
     logging.info(f'Try to unregister pair={pair} on data-api')
 
     response = requests.post(f'{DATA_API_URI}/api/remove-pair/{pair}')
