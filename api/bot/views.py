@@ -65,7 +65,6 @@ async def start_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = D
     return {'message': f'Bot with id={bot_id} is successfully started'}
 
 
-# todo: think of logic when some inconsistency happened (and could it really happen? should it be considered then?)
 @bot_router.post("/stop/{bot_id}")
 async def stop_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = Depends(get_db)):
     logging.info(f'View stop bot with id={bot_id}')
@@ -120,17 +119,16 @@ async def delete_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = 
     logging.info(f'Successfully deleted bot with id={bot_id} from db')
 
     # Delete bot from Pool
-    bot = pool.get_bot(bot_id)
-    if not bot:
+    pair = db.query(Stock).filter(Stock.id == pair_id).first().name
+    deleted = pool.remove(pair, bot_id)
+    if not deleted:
         logging.info(f'Bot with id={bot_id} is not found in the pool')
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail=f'Bot with id={bot_id} is not found in pool')
-    del bot
     logging.info(f'Successfully deleted bot with id={bot_id} from pool')
 
     # Unregister pair if no bot is using it
     if db.query(Bot).filter(Bot.stock_id == pair_id).count() == 0:
-        pair = db.query(Stock).filter(Stock.id == pair_id).first().name
         await unregister_pair(pair, db)
         logging.info(f'Successfully unregister pair with id={id} name={pair}')
     else:

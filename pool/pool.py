@@ -31,19 +31,39 @@ class Pool:
 
         logging.info(f"Successfully added new stock to pool. Pool={self.stock_bots_mapping}")
 
-    def remove(self, stock_name, bot):
-        # #  TODO: think about that
-        # self.stock_bots_mapping[stock_name].remove(bot)
-        #
-        # if len(self.stock_bots_mapping[stock_name]) == 0:
-        #     del self.stock_bots_mapping[stock_name]
-        pass
+    def remove(self, stock_name: str, bot_id: int) -> bool:
+        logging.info(f'pool.remove(pair={stock_name}, bot_id={bot_id})')
+
+        # get bots on pair
+        bots = self.stock_bots_mapping.get(stock_name)
+        if bots is None:
+            logging.info(f'There is no bots on pair {stock_name}')
+            return False
+
+        # remove bot
+        removed = False
+        for bot in bots:
+            if bot.id == bot_id:
+                logging.info(f'Remove bot {bot} from pool pair={stock_name}')
+                self.stock_bots_mapping[stock_name].remove(bot)
+                del bot
+                removed = True
+
+        if not removed:
+            return False
+
+        # delete pair from pool if no bots are on it
+        if len(self.stock_bots_mapping[stock_name]) == 0:
+            logging.info(f'Remove stock_name={stock_name} from pool')
+            del self.stock_bots_mapping[stock_name]
+
+        return True
 
     def run_bots(self, stock_name: str, new_price: float):
         logging.info(f'Pool.run_bots() | stock_bots_mapping={self.stock_bots_mapping}')
         bots = self.stock_bots_mapping[stock_name]
 
-        # TODO: THINK ABOUT BOTS IN TERMS OF PARALLELISM
+        # todo: add multithreading
         for bot in bots:
             bot.step(new_price)
 
