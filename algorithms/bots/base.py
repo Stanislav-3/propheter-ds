@@ -88,4 +88,4 @@ class BotBase(ABC):
             else:
                 money = self.paper_money
 
-            print('Current paper balance:', money)
+            logging.info('Current paper balance:', money)
