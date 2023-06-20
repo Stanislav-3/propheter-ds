@@ -12,7 +12,6 @@ async def register_pair_on_data_api(pair: str) -> None:
 
     response = requests.post(f'{DATA_API_URI}/api/add-pair/{pair}')
     if response.status_code != 200:
-        await remove_pair_and_klines_from_db(pair, db)
         raise Exception(f'Post request to {DATA_API_URI}/api/add-pair/{pair} gave response '
                         f'with status_code={response.status_code}')
 
