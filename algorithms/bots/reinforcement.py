@@ -2,7 +2,9 @@ import itertools
 import logging
 import numpy as np
 import pandas as pd
+import requests
 
+from config.settings import DATA_API_URI
 from algorithms.bots.base import BotBase, BotStatus, BotMoneyMode, ReturnType
 from algorithms.preprocessing.returns import get_log_returns
 
@@ -177,8 +179,25 @@ def get_is_invested(states):
 
 
 class ReinforcementBot(BotBase):
-    def __init__(self):
+    def __init__(self,
+                 id: int,
+                 key_id: int,
+                 pair: str,
+                 min_level: float,
+                 max_level: float,
+                 max_money_to_invest: float,
+                 money_mode: BotMoneyMode,
+                 return_type: ReturnType):
         super().__init__()
+
+        self.id = id
+        self.key_id = key_id
+        self.pair = pair
+        self.min_level = min_level
+        self.max_level = max_level
+        self.max_money_to_invest = max_money_to_invest
+        self.money_mode = money_mode
+        self.return_type = return_type
 
         self.train_data = None
         self.test_data = None
@@ -193,13 +212,14 @@ class ReinforcementBot(BotBase):
 
         self.hold = False
 
+        # todo: maybe start in other thread
         self.start()
 
     def start(self) -> None:
         self.status = BotStatus.LOADING
 
-        prices = np.ones(300)
-        log_returns = get_log_returns(prices)
+        response = requests.get(f'{DATA_API_URI}/get-tick-prices/{self.pair}')
+        log_returns = get_log_returns(response.json()['prices'])
 
         # Prepare data
         data = pd.DataFrame({
