@@ -1,5 +1,12 @@
+import logging
 import numpy as np
+from enum import Enum
 from algorithms.bots.base import BotBase, BotMoneyMode, ReturnType, BotStatus
+
+
+class RunningMode(Enum):
+    STATIC = 'Static'
+    DYNAMIC = 'Dynamic'
 
 
 class GridBot(BotBase):
@@ -9,9 +16,12 @@ class GridBot(BotBase):
                  min_level: float,
                  max_level: float,
                  max_money_to_invest: float,
+                 money_to_trade: float,
                  money_mode: BotMoneyMode,
                  return_type: ReturnType,
-                 levels_amount: int):
+                 levels_amount: int,
+                 running_mode: RunningMode,
+                 boundary_factor: float = 0.1):
         super().__init__()
         self.key_id = key_id
         self.pair = pair
@@ -26,68 +36,88 @@ class GridBot(BotBase):
 
         self.levels = None
         self.levels_amount = levels_amount
-        self.money_to_trade = None
+        self.money_to_trade = money_to_trade
         self.invested_amount = 0.
 
-    @staticmethod
-    def check_parameters(levels_amount: int, money_to_trade: float, max_money_to_invest):
-        if levels_amount <= 0:
-            return ValueError(f'Levels_amount value should be greater than zero, '
-                              f'but provided levels_amount={levels_amount}')
-        if levels_amount % 2 != 0:
-            return ValueError(f'Levels_amount value should be even, '
-                              f'but provided levels_amount={levels_amount} is odd')
+        self.boundary_factor = boundary_factor
+        self.running_mode = running_mode
 
-        if money_to_trade * levels_amount / 2 > max_money_to_invest:
-            return ValueError(f'Money to trade per level multiplied by levels_amount / 2 '
-                              f'should be less than all reserved money for trading')
+        self.start()
 
-    @staticmethod
-    def adjust_grid(price: float, levels_amount: int) -> np.array:
-        lower_boundary = price * 0.9
-        upper_boundary = price * 1.1
+    def check_parameters(self):
+        if self.levels_amount <= 0 or self.levels_amount > 50:
+            raise ValueError(f'Levels_amount value should be greater than zero and not greater than 50, '
+                             f'but provided levels_amount={self.levels_amount}')
+        if self.levels_amount % 2 != 0:
+            raise ValueError(f'Levels_amount value should be even, '
+                             f'but provided levels_amount={self.levels_amount} is odd')
 
-        levels = np.linspace(lower_boundary, upper_boundary, num=levels_amount)
+        if self.money_to_trade * self.levels_amount / 2 > self.max_money_to_invest:
+            raise ValueError(f'Money to trade per level multiplied by levels_amount / 2 '
+                             f'should be less than all reserved money for trading')
+
+        if self.running_mode == RunningMode.DYNAMIC \
+                and (self.boundary_factor < 0.1 or self.boundary_factor > 0.9):
+            raise ValueError(f'Boundary factor should be less than 0.9 and greater than 0.1, '
+                             f'but provided boundary_factor={self.boundary_factor}')
+
+    def get_levels_for_adjusted_grid(self, price: float) -> np.array:
+        lower_boundary = price * (1 - self.boundary_factor)
+        upper_boundary = price * (1 + self.boundary_factor)
+
+        levels = np.linspace(lower_boundary, upper_boundary, num=self.levels_amount)
         return levels
 
-    @staticmethod
-    def check_grid(price: float, levels: np.array, money_to_trade) -> float:
+    def check_grid(self, price: float) -> float:
         buy_amount = 0
-        below_levels, above_levels = np.split(levels, 2)
+        below_levels, above_levels = np.split(self.levels, 2)
 
-        # can be optimized
+        # todo: can be optimized
         for level in below_levels:
             if price < level:
-                buy_amount += money_to_trade
+                buy_amount += self.money_to_trade
 
-        # can be optimized
+        # todo: can be optimized
         for level in above_levels:
             if price > level:
-                buy_amount -= money_to_trade
+                buy_amount -= self.money_to_trade
 
         return buy_amount
 
     def start(self) -> None:
-        self.check_parameters(self.levels_amount, self.money_to_trade, self.max_money_to_invest)
-        # todo: add real price
-        price = np.random.random()
-        self.levels = self.adjust_grid(price, self.levels_amount)
-        self.status = BotStatus.RUNNING
+        self.check_parameters()
+        self.status = BotStatus.LOADING
 
     def step(self, new_price: float) -> None:
-        self.check_is_running()
-        self.check_money_mode_is_configured()
+        logging.info(f'Step for bot={self}')
 
-        investment_delta = self.check_grid(new_price, self.levels, self.money_to_trade)
+        if self.status == BotStatus.LOADING:
+            self.loading_step(new_price)
+        elif self.status == BotStatus.RUNNING:
+            self.running_step(new_price)
+
+    def loading_step(self, new_price):
+        logging.info(f'Loading step for bot={self}')
+        self.levels = self.get_levels_for_adjusted_grid(new_price)
+        self.status = BotStatus.RUNNING
+
+    def running_step(self, new_price):
+        logging.info(f'Running step for bot={self}')
+        investment_delta = self.check_grid(new_price)
 
         if investment_delta != 0:
-            self.levels = self.adjust_grid(new_price, self.levels_amount)
+            # Adjust grid if bot is dynamic
+            if self.running_mode == RunningMode.DYNAMIC:
+                self.levels = self.get_levels_for_adjusted_grid(new_price)
 
-            # sell
-            if abs(investment_delta) > self.invested_amount:
-                investment_delta = min(self.invested_amount, self.max_money_to_invest)
-
+            # Sell
             if investment_delta > 0:
-                self.buy()
+                # Ensure bot doesn't sell to much
+                if abs(investment_delta) > self.invested_amount:
+                    investment_delta = -self.invested_amount
+                self.buy(new_price)
+            # Buy
             else:
-                self.sell()
+                # Ensure bot doesn't buy to much
+                investment_delta = min(investment_delta, self.max_money_to_invest - self.invested_amount)
+                self.sell(new_price)

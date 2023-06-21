@@ -1,10 +1,9 @@
-from typing import Literal, Dict, Optional, Type
-from pydantic import BaseModel, parse_obj_as
-from pydantic.error_wrappers import ValidationError
-from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel
 
 from algorithms.bots.base import BotMoneyMode, ReturnType
 from algorithms.bots.dca import InvestmentIntervalScale
+from algorithms.bots.grid import RunningMode
 
 
 class BotBaseParameters(BaseModel):
@@ -31,7 +30,10 @@ class DCABotParameters(BotBaseParameters):
 
 
 class GridBotParameters(BotBaseParameters):
-    pass
+    money_to_trade: float
+    levels_amount: int
+    running_mode: RunningMode
+    boundary_factor: Optional[float]
 
 
 class ReinforcementBotParameters(BotBaseParameters):
