@@ -23,9 +23,13 @@ bot_router = APIRouter(prefix='/bot')
 
 
 @bot_router.get('/get-bot-status/{bot_id}')
-def get_bot_status(bot_id):
+def get_bot_status(bot_id: int, db: Session = Depends(get_db)):
+    bot = db.query(Bot).get(bot_id)
+    if bot is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Bot with id={bot_id} is not found in db')
+
     return {
-        'bot_status': None,
+        'bot_status': bot.status,
         'message': f'Bot status for bot {None} is successfully obtained'
     }
 
