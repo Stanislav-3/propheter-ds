@@ -6,6 +6,7 @@ from sqlalchemy.orm.session import Session
 
 from models.models_ import Bot, BotType, Stock, Key, Kline, Transaction
 from pool.main import Pool, get_pool
+from algorithms.bots.base import BotStatus
 from algorithms.bots.trend_following import TrendFollowingBot
 from algorithms.bots.dca import DCABot
 from algorithms.bots.grid import GridBot
@@ -112,7 +113,7 @@ async def start_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = D
                             detail=f'Bot with id={bot_id} is not found in db. \n'
                                    f'In Pool bot={pool.get_bot(bot_id)}')
 
-    bot.is_active = True
+    bot.status = BotStatus.LOADING
     db.commit()
     pair_id = bot.stock_id
 
@@ -127,7 +128,7 @@ async def start_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = D
 
     # Register pair if no other bot is using it
     if db.query(Bot).filter(Bot.stock_id == pair_id)\
-            .filter(Bot.is_active == True).count() == 1:
+            .filter(Bot.status != BotStatus.STOPPED).count() == 1:
         pair = db.query(Stock).filter(Stock.id == pair_id).first().name
         await register_pair_on_data_api(pair)
         logging.info(f'Successfully register pair with id={id} name={pair}')
@@ -149,7 +150,7 @@ async def stop_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = De
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail=f'Bot with id={bot_id} is not found in db. \n'
                                    f'In Pool bot={pool.get_bot(bot_id)}')
-    bot.is_active = False
+    bot.status = BotStatus.STOPPED
     db.commit()
     pair_id = bot.stock_id
     logging.info(f'Successfully stopped bot with id={bot_id} in db')
@@ -165,7 +166,7 @@ async def stop_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = De
 
     # Unregister pair if no bot is using it
     if db.query(Bot).filter(Bot.stock_id == pair_id)\
-            .filter(Bot.is_active == True).count() == 0:
+            .filter(Bot.status != BotStatus.STOPPED).count() == 0:
         pair = db.query(Stock).filter(Stock.id == pair_id).first().name
         await remove_klines_from_db(pair, db)
         await unregister_pair_on_data_api(pair)
