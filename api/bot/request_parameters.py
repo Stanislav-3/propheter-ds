@@ -38,3 +38,28 @@ class GridBotParameters(BotBaseParameters):
 
 class ReinforcementBotParameters(BotBaseParameters):
     pass
+
+
+bot_type_bot_parameters_mapping = {
+    'trend-following-bot': TrendFollowingBotParameters,
+    'dca-bot': DCABotParameters,
+    'grid-bot': GridBotParameters,
+    'reinforcement-bot': ReinforcementBotParameters
+}
+
+
+def parse_part_of_parameters(bot_type_name: str, body: dict) -> dict:
+    parameters = bot_type_bot_parameters_mapping[bot_type_name].__annotations__
+    parameters.update(BotBaseParameters.__annotations__)
+
+    parsed_body = {}
+    for key, value in body.items():
+        value_type = parameters.get(key)
+        if value_type is None:
+            raise ValueError(f'Incorrect parameters. There is no parameter {key} in BotParameters')
+
+        parsed_body[key] = value_type(value)
+
+    return parsed_body
+
+

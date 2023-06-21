@@ -12,7 +12,8 @@ from algorithms.bots.grid import GridBot
 from algorithms.bots.reinforcement import ReinforcementBot
 from config.settings import get_db
 from api.bot.request_parameters import (TrendFollowingBotParameters,
-                                        DCABotParameters, GridBotParameters, ReinforcementBotParameters)
+                                        DCABotParameters, GridBotParameters, ReinforcementBotParameters,
+                                        parse_part_of_parameters)
 from api.bot.bot_stuff import create_specific_bot
 from api.bot.data_api_stuff import register_pair_on_data_api, unregister_pair_on_data_api
 from api.bot.db_stuff import remove_klines_from_db, remove_pair_and_klines_from_db
@@ -21,15 +22,48 @@ from api.bot.db_stuff import remove_klines_from_db, remove_pair_and_klines_from_
 bot_router = APIRouter(prefix='/bot')
 
 
-@bot_router.get('/exc')
-async def raise_exception():
-    raise Exception(30 * 'THIS IS THE EXCEPTION!!!!!!!!!!!!!!!\n')
-
-
-# todo: add edit view
 @bot_router.put('/edit/{bot_id}')
-async def edit_bot(bot_id: int):
-    pass
+async def edit_bot(request: Request, bot_id: int,
+                   pool: Pool = Depends(get_pool),
+                   db: Session = Depends(get_db)):
+    logging.info(f'View edit bot with id={bot_id}')
+    # Stop bot
+    await stop_bot(bot_id)
+
+    bot_db = db.query(Bot).get(bot_id)
+    bot_type_id = bot_db.bot_type_id
+    bot_type_name = db.query(BotType).get(bot_type_id).name
+
+    # Get body
+    body = dict(await request.form())
+
+    # Parse body
+    try:
+        parsed_body = parse_part_of_parameters(bot_type_name, body)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+
+    # Update bot in the pool
+    bot = pool.get_bot(bot_id)
+    bot.__dict__.update(parsed_body)
+
+    # Update bot in db todo: cannot change pair of bot
+    bot_param_field = {}
+    bot_other_fields = {}
+    for key, value in parsed_body.items():
+        if key in ['min_level', 'max_level', 'max_money_to_invest', 'money_mode', 'return_type']:
+            bot_other_fields[key] = value
+        else:
+            bot_other_fields[key] = value
+
+    bot_db.__dict__.update(bot_other_fields)
+    bot_db.parameters.__dict__.update(bot_param_field)
+    db.commit()
+
+    # Start bot
+    await start_bot(bot_id)
+
+    return {'message': f'Successfully edited bot with id={bot_id}'}
 
 
 @bot_router.post("/create/{bot_type_name}")
