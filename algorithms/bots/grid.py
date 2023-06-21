@@ -111,13 +111,15 @@ class GridBot(BotBase):
                 self.levels = self.get_levels_for_adjusted_grid(new_price)
 
             # Sell
-            if investment_delta > 0:
+            if investment_delta < 0:
                 # Ensure bot doesn't sell to much
                 if abs(investment_delta) > self.invested_amount:
                     investment_delta = -self.invested_amount
-                self.buy(new_price)
+
+                self.sell(new_price)
             # Buy
             else:
                 # Ensure bot doesn't buy to much
                 investment_delta = min(investment_delta, self.max_money_to_invest - self.invested_amount)
-                self.sell(new_price)
+
+                self.buy(new_price)
