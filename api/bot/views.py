@@ -26,6 +26,12 @@ async def raise_exception():
     raise Exception(30 * 'THIS IS THE EXCEPTION!!!!!!!!!!!!!!!\n')
 
 
+# todo: add edit view
+@bot_router.put('/edit/{bot_id}')
+async def edit_bot(bot_id: int):
+    pass
+
+
 @bot_router.post("/create/{bot_type_name}")
 async def create_bot(request: Request,
                      bot_type_name: Literal['trend-following-bot', 'dca-bot', 'grid-bot', 'reinforcement-bot'],

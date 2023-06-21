@@ -4,6 +4,7 @@ from pydantic.error_wrappers import ValidationError
 from datetime import datetime
 
 from algorithms.bots.base import BotMoneyMode, ReturnType
+from algorithms.bots.dca import InvestmentIntervalScale
 
 
 class BotBaseParameters(BaseModel):
@@ -24,7 +25,9 @@ class TrendFollowingBotParameters(BotBaseParameters):
 
 
 class DCABotParameters(BotBaseParameters):
+    investment_money: float
     investment_interval: int
+    investment_interval_scale: InvestmentIntervalScale
 
 
 class GridBotParameters(BotBaseParameters):
