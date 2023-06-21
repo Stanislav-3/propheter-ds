@@ -4,7 +4,7 @@ from sqlalchemy_json import mutable_json_type
 
 from config.settings import Base
 from algorithms.bots.base import BotAction
-from algorithms.bots.base import BotMoneyMode, ReturnType
+from algorithms.bots.base import BotMoneyMode, ReturnType, BotStatus
 
 
 class BotType(Base):
@@ -38,7 +38,7 @@ class Bot(Base):
     bot_type_id = Column(ForeignKey('BotTypes.id', ondelete='CASCADE'))
     key_id = Column(ForeignKey('Keys.id', ondelete='CASCADE'), nullable=True)
 
-    is_active = Column(Boolean())
+    status = Column(Enum(BotStatus))
     parameters = Column(mutable_json_type(dbtype=JSONB, nested=True))
     max_money_to_invest = Column(DECIMAL(precision=10, scale=2))
     max_level = Column(DECIMAL(precision=8, scale=2))

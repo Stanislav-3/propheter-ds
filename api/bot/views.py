@@ -22,6 +22,14 @@ from api.bot.db_stuff import remove_klines_from_db, remove_pair_and_klines_from_
 bot_router = APIRouter(prefix='/bot')
 
 
+@bot_router.get('/get-bot-status/{bot_id}')
+def get_bot_status(bot_id):
+    return {
+        'bot_status': None,
+        'message': f'Bot status for bot {None} is successfully obtained'
+    }
+
+
 @bot_router.put('/edit/{bot_id}')
 async def edit_bot(request: Request, bot_id: int,
                    pool: Pool = Depends(get_pool),
