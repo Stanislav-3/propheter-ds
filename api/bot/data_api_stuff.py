@@ -1,3 +1,5 @@
+import asyncio
+
 import requests
 import logging
 from fastapi import HTTPException
@@ -11,6 +13,7 @@ async def register_pair_on_data_api(pair: str) -> None:
     logging.info(f'Try to register pair={pair} on data-api')
 
     response = requests.post(f'{DATA_API_URI}/api/add-pair/{pair}')
+    await asyncio.sleep(0.2)
     response = requests.post(f'{DATA_API_URI}/api/add-pair/{pair}')
     # if response.status_code != 200:
     #     raise Exception(f'Post request to {DATA_API_URI}/api/add-pair/{pair} gave response '
@@ -23,6 +26,7 @@ async def unregister_pair_on_data_api(pair: str) -> None:
     logging.info(f'Try to unregister pair={pair} on data-api')
 
     response = requests.post(f'{DATA_API_URI}/api/remove-pair/{pair}')
+    await asyncio.sleep(0.2)
     response = requests.post(f'{DATA_API_URI}/api/remove-pair/{pair}')
     # if response.status_code != 200:
     #     raise Exception(f'Post request to {DATA_API_URI}/api/remove-pair/{pair} gave response '
