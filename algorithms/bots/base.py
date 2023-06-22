@@ -20,6 +20,7 @@ class BotBase(ABC):
 
         self.quote_asset_balance = 0
         self.base_asset_balance = 0
+        self.total_balance_in_quote_asset = 0
 
         self.commission = 0.001
 
@@ -33,6 +34,9 @@ class BotBase(ABC):
     @abstractmethod
     def step(self, new_price: float) -> None:
         pass
+
+    def recalculate_total_balance(self, price: float):
+        self.total_balance_in_quote_asset = self.quote_asset_balance + self.base_asset_balance / price
 
     def stop(self) -> None:
         # Set status in bot
@@ -61,6 +65,7 @@ class BotBase(ABC):
         # Update balances
         self.base_asset_balance += base_asset_bought
         self.quote_asset_balance -= quote_asset_sold
+        self.recalculate_total_balance(price)
 
         # Add transaction to db
         transaction = Transaction(
@@ -69,6 +74,9 @@ class BotBase(ABC):
             price=price,
             base_asset_amount=base_asset_bought,
             quote_asset_amount=quote_asset_sold,
+            base_asset_balance=self.base_asset_balance,
+            quote_asset_balance=self.quote_asset_balance,
+            total_balance_in_quote_asset=self.total_balance_in_quote_asset,
             type=BotAction.BUY,
             money_mode=self.money_mode
         )
@@ -92,6 +100,7 @@ class BotBase(ABC):
         # Update balances
         self.base_asset_balance -= base_asset_sold
         self.quote_asset_balance += quote_asset_bought
+        self.recalculate_total_balance(price)
 
         # Add transaction to db
         transaction = Transaction(
@@ -100,6 +109,9 @@ class BotBase(ABC):
             price=price,
             base_asset_amount=base_asset_sold,
             quote_asset_amount=quote_asset_bought,
+            base_asset_balance=self.base_asset_balance,
+            quote_asset_balance=self.quote_asset_balance,
+            total_balance_in_quote_asset=self.total_balance_in_quote_asset,
             type=BotAction.SELL,
             money_mode=self.money_mode
         )
@@ -107,7 +119,7 @@ class BotBase(ABC):
         db.commit()
 
     def verbose_price(self, price: float):
-        money = self.base_asset_balance * price + self.quote_asset_balance
+        money = self.base_asset_balance / price + self.quote_asset_balance
 
         logging.info(f'Current balance for bot={self}:', money)
 
