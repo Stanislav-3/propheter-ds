@@ -270,7 +270,7 @@ class ReinforcementBot(BotBase):
 
         if not self.hold and action == 0:
             self.hold = True
-            self.buy(new_price)
+            self.buy(self.bot_balance, new_price)
         elif self.hold and action == 1:
             self.hold = False
-            self.sell(new_price)
+            self.sell(1, new_price)

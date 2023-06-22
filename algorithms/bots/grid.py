@@ -116,10 +116,10 @@ class GridBot(BotBase):
                 if abs(investment_delta) > self.invested_amount:
                     investment_delta = -self.invested_amount
 
-                self.sell(new_price)
+                self.sell(abs(investment_delta), new_price)
             # Buy
             else:
                 # Ensure bot doesn't buy to much
                 investment_delta = min(investment_delta, self.max_money_to_invest - self.invested_amount)
 
-                self.buy(new_price)
+                self.buy(investment_delta, new_price)

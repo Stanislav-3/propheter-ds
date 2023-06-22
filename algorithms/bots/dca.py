@@ -49,7 +49,7 @@ class DCABot(BotBase):
 
         # Update next investment date and invest in pair
         self.next_investment_time += self.investment_interval_in_seconds
-        self.buy(new_price)
+        self.buy(self.investment_money, new_price)
 
     def get_investment_interval_in_seconds(self) -> float:
         if self.investment_interval_scale == InvestmentIntervalScale.MINUTE:
