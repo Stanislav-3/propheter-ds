@@ -95,3 +95,6 @@ class BotBase(ABC):
                 money = self.paper_money
 
             logging.info(f'Current paper balance for bot={self}:', money)
+
+    def set_running(self):
+        pass

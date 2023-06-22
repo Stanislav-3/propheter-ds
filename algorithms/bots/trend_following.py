@@ -4,6 +4,8 @@ import pandas as pd
 import pandera as pa
 from typing import Sequence, NamedTuple
 
+from config.settings import SessionLocal
+from models.models_ import Bot
 from algorithms.bots.base import BotBase, ReturnType, BotMoneyMode, BotStatus
 from algorithms.preprocessing.returns import (
     get_log_returns, get_returns, from_log_returns_to_factor, from_returns_to_factor
@@ -99,6 +101,12 @@ class TrendFollowingBot(BotBase):
 
         self.loading_prices.clear()
         self.status = BotStatus.RUNNING
+
+        # Set status to running in db
+        db = SessionLocal()
+        bot = db.query(Bot).get(self.id)
+        bot.status = BotStatus.RUNNING
+        db.commit()
 
     def running_step(self, new_price):
         logging.info(f'Running step for bot={self}')
