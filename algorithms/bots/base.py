@@ -52,6 +52,7 @@ class BotBase(ABC):
             # todo: add transaction to db an request to data api
             pass
 
+        # Add transaction to db
         transaction = Transaction(
             bot_id=self.id,
             date=datetime.now(),
@@ -59,7 +60,8 @@ class BotBase(ABC):
             price=price,
             # todo: add real amount if real trade
             amount=amount,
-            type=None
+            type=BotAction.BUY,
+            money_mode=self.money_mode
         )
         db = SessionLocal()
         db.add(transaction)
@@ -74,7 +76,20 @@ class BotBase(ABC):
             # todo: add transaction to db an request to data api
             pass
 
-
+        # Add transaction to db
+        transaction = Transaction(
+            bot_id=self.id,
+            date=datetime.now(),
+            # todo: add real price if real trade
+            price=price,
+            # todo: add real amount if real trade
+            amount=amount,
+            type=BotAction.BUY,
+            money_mode=self.money_mode
+        )
+        db = SessionLocal()
+        db.add(transaction)
+        db.commit()
 
     def verbose_price(self, price: float):
         if self.money_mode == BotMoneyMode.PAPER:
