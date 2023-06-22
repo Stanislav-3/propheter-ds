@@ -39,9 +39,9 @@ class Bot(Base):
 
     status = Column(Enum(BotStatus))
     parameters = Column(mutable_json_type(dbtype=JSONB, nested=True))
-    max_money_to_invest = Column(DECIMAL(precision=10, scale=2))
-    max_level = Column(DECIMAL(precision=8, scale=2))
-    min_level = Column(DECIMAL(precision=8, scale=2))
+    max_money_to_invest = Column(DECIMAL(precision=32, scale=17))
+    max_level = Column(DECIMAL(precision=32, scale=17))
+    min_level = Column(DECIMAL(precision=32, scale=17))
     money_mode = Column(Enum(BotMoneyMode))
     return_type = Column(Enum(ReturnType))
 
@@ -82,11 +82,11 @@ class Kline(Base):
     stock_id = Column(ForeignKey('Stocks.id', ondelete='CASCADE'))
 
     date = Column(DateTime())
-    low = Column(DECIMAL(precision=8, scale=2))
-    high = Column(DECIMAL(precision=8, scale=2))
-    open = Column(DECIMAL(precision=8, scale=2))
-    close = Column(DECIMAL(precision=8, scale=2))
-    volume = Column(DECIMAL(precision=14, scale=2))
+    low = Column(DECIMAL(precision=32, scale=17))
+    high = Column(DECIMAL(precision=32, scale=17))
+    open = Column(DECIMAL(precision=32, scale=17))
+    close = Column(DECIMAL(precision=32, scale=17))
+    volume = Column(DECIMAL(precision=32, scale=17))
 
     def __repr__(self):
         return f'id={self.id}, stock_id={self.stock_id}, date={self.date}, low={self.low}, high={self.high}, ' \
@@ -127,11 +127,11 @@ class Transaction(Base):
     bot_id = Column(ForeignKey('Bots.id', ondelete='CASCADE'))
 
     date = Column(DateTime())
-    price = Column(DECIMAL(precision=8, scale=2))
-    base_asset_balance = Column(DECIMAL(precision=10, scale=2))
-    quote_asset_balance = Column(DECIMAL(precision=10, scale=2))
-    base_asset_amount = Column(DECIMAL(precision=10, scale=2))
-    quote_asset_amount = Column(DECIMAL(precision=10, scale=2))
-    total_balance_in_quote_asset = Column(DECIMAL(precision=10, scale=2))
+    price = Column(DECIMAL(precision=32, scale=17))
+    base_asset_balance = Column(DECIMAL(precision=32, scale=17))
+    quote_asset_balance = Column(DECIMAL(precision=32, scale=17))
+    base_asset_amount = Column(DECIMAL(precision=32, scale=17))
+    quote_asset_amount = Column(DECIMAL(precision=32, scale=17))
+    total_balance_in_quote_asset = Column(DECIMAL(precision=32, scale=17))
     type = Column(Enum(BotAction))
     money_mode = Column(Enum(BotMoneyMode))
