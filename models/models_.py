@@ -3,8 +3,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy_json import mutable_json_type
 
 from config.settings import Base
-from algorithms.bots.base import BotAction
-from algorithms.bots.base import BotMoneyMode, ReturnType, BotStatus
+from algorithms.bots.base_enums import BotMoneyMode, ReturnType, BotStatus, BotAction
 
 
 class BotType(Base):
@@ -131,3 +130,4 @@ class Transaction(Base):
     price = Column(DECIMAL(precision=8, scale=2))
     amount = Column(DECIMAL(precision=10, scale=2))
     type = Column(Enum(BotAction))
+    money_mode = Column(Enum(BotMoneyMode))

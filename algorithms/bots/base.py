@@ -1,36 +1,11 @@
 import logging
 from abc import ABC, abstractmethod
-from enum import Enum
-import requests
+from datetime import datetime
 
 from config.settings import SessionLocal
-from models.models_ import Bot
+from models.models_ import Bot, Transaction
+from algorithms.bots.base_enums import BotAction, BotStatus, BotMoneyMode, ReturnType
 from exceptions.bot_exceptions import BotIsNotRunningError, BotModeIsNotConfiguredError
-from typing import NamedTuple
-
-
-class BotStatus(Enum):
-    LOADING = 'Loading'
-    RUNNING = 'Running'
-    STOPPED = 'Stopped'
-
-
-class BotMoneyMode(Enum):
-    REAL = 'Real'
-    PAPER = 'Paper'
-    NOT_CONFIGURED = 'Not configured'
-
-
-class ReturnType(Enum):
-    LOG_RETURN = 'Log_return'
-    RETURN = 'Return'
-
-
-class BotAction(Enum):
-    BUY = 'Buy'
-    HOLD = 'Hold'
-    SELL = 'Sell'
-    DO_NOTHING = 'Do nothing'
 
 
 class BotBase(ABC):
@@ -67,16 +42,7 @@ class BotBase(ABC):
     def step(self, new_price: float) -> None:
         pass
 
-    def check_is_running(self) -> None:
-        if self.status != BotStatus.RUNNING:
-            raise BotIsNotRunningError(f'You cannot use bot "{self.__class__.__name__}"'
-                                       f'because it is still not configured')
-
-    def check_money_mode_is_configured(self) -> None:
-        if self.money_mode == BotMoneyMode.NOT_CONFIGURED:
-            raise BotModeIsNotConfiguredError(f'Money mode of bot "{self.__class__.__name__}" is not configured')
-
-    def buy(self, price: float):
+    def buy(self, amount: float, price: float):
         logging.info(f'Buy on {self.pair} with price={price} by bot={self}')
 
         if self.money_mode == BotMoneyMode.PAPER:
@@ -86,7 +52,20 @@ class BotBase(ABC):
             # todo: add transaction to db an request to data api
             pass
 
-    def sell(self, price: float):
+        transaction = Transaction(
+            bot_id=self.id,
+            date=datetime.now(),
+            # todo: add real price if real trade
+            price=price,
+            # todo: add real amount if real trade
+            amount=amount,
+            type=None
+        )
+        db = SessionLocal()
+        db.add(transaction)
+        db.commit()
+
+    def sell(self, amount: float, price: float):
         logging.info(f'Sell on {self.pair} with price={price} by bot={self}')
 
         if self.money_mode == BotMoneyMode.PAPER:
@@ -94,6 +73,8 @@ class BotBase(ABC):
         elif self.money_mode == BotMoneyMode.REAL:
             # todo: add transaction to db an request to data api
             pass
+
+
 
     def verbose_price(self, price: float):
         if self.money_mode == BotMoneyMode.PAPER:
@@ -123,4 +104,3 @@ class BotBase(ABC):
         bot = db.query(Bot).get(self.id)
         bot.status = BotStatus.RUNNING
         db.commit()
-
