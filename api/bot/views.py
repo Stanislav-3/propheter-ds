@@ -77,7 +77,7 @@ async def edit_bot(request: Request, bot_id: int,
                    db: Session = Depends(get_db)):
     logging.info(f'View edit bot with id={bot_id}')
     # Stop bot
-    await stop_bot(bot_id)
+    await stop_bot(bot_id, pool, db)
 
     bot_db = db.query(Bot).get(bot_id)
     bot_type_id = bot_db.bot_type_id
@@ -110,7 +110,7 @@ async def edit_bot(request: Request, bot_id: int,
     db.commit()
 
     # Start bot
-    await start_bot(bot_id)
+    await start_bot(bot_id, pool, db)
 
     return {'message': f'Successfully edited bot with id={bot_id}'}
 
