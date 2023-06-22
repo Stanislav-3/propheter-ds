@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -56,7 +57,8 @@ class BotBase(ABC):
         db = SessionLocal()
 
         if self.money_mode == BotMoneyMode.REAL:
-            order = await buy_pair(self.pair, self.key_id, quote_asset_quantity=quote_amount, db=db)
+            loop = asyncio.get_event_loop()
+            order = loop.run_until_complete(buy_pair(self.pair, self.key_id, quote_asset_quantity=quote_amount, db=db))
             price = order['price']
             base_asset_bought = order['base_asset_bought']
             quote_asset_sold = order['quote_asset_sold']
@@ -91,7 +93,8 @@ class BotBase(ABC):
         db = SessionLocal()
 
         if self.money_mode == BotMoneyMode.REAL:
-            order = await sell_pair(self.pair, self.key_id, quote_asset_quantity=quote_amount, db=db)
+            loop = asyncio.get_event_loop()
+            order = loop.run_until_complete(sell_pair(self.pair, self.key_id, quote_asset_quantity=quote_amount, db=db))
             price = order['price']
             base_asset_sold = order['base_asset_sold']
             quote_asset_bought = order['quote_asset_bought']
