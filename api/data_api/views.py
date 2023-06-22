@@ -73,67 +73,67 @@ def get_balance(currency: str, account_info) -> float | None:
     return None
 
 
-@data_api_router.post('/buy/{pair}')
-async def buy_pair(pair: str,
-                   key_id: int = Form(...),
-                   quote_asset_quantity: float = Form(...),
-                   db: Session = Depends(get_db)):
-    logging.info(f'View sell pair={pair}, quote_asset_quantity={quote_asset_quantity}')
-
-    key = db.query(Key).get(key_id)
-    if not key:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f'Key with id={key_id} is not found')
-
-    client = await AsyncClient.create(api_key=key.api_key, api_secret=key.secret_key)
-
-    base_currency, quote_currency = split_pair(pair)
-    quote_balance = get_balance(quote_currency, await client.get_account())
-    buy_amount = min(quote_balance, quote_asset_quantity)
-
-    order = await client.order_market_buy(symbol=pair, quoteOrderQty=float_to_str(buy_amount))
-
-    await client.close_connection()
-
-    fills = order['fills'][0]
-
-    return {
-        'message': 'Successfully sell',
-        'base_asset_bought': float(fills['qty']) - float(fills['commission']),
-        'quote_asset_sold': float(order['cummulativeQuoteQty']),
-        'price': float(fills['price'])
-    }
-
-
-@data_api_router.post('/sell/{pair}')
-async def sell_pair(pair: str,
-                    key_id: int = Form(...),
-                    quote_asset_quantity: float = Form(...),
-                    db: Session = Depends(get_db)):
-    logging.info(f'View sell pair={pair}, quote_asset_quantity={quote_asset_quantity}')
-
-    key = db.query(Key).get(key_id)
-    if not key:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f'Key with id={key_id} is not found')
-
-    client = await AsyncClient.create(api_key=key.api_key, api_secret=key.secret_key)
-
-    base_currency, quote_currency = split_pair(pair)
-    base_balance = get_balance(base_currency, await client.get_account())
-
-    try:
-        order = await client.order_market_sell(symbol=pair, quoteOrderQty=float_to_str(quote_asset_quantity))
-    except BinanceAPIException:
-        order = await client.order_market_sell(symbol=pair, quantity=float_to_str(base_balance))
-
-    await client.close_connection()
-
-    fills = order['fills'][0]
-
-    return {
-        'message': 'Successfully sell',
-        'base_asset_sold': float(fills['qty']),
-        'quote_asset_bought': float(order['cummulativeQuoteQty']) - float(fills['commission']),
-        'price': float(fills['price'])
-    }
+# @data_api_router.post('/buy/{pair}')
+# async def buy_pair(pair: str,
+#                    key_id: int = Form(...),
+#                    quote_asset_quantity: float = Form(...),
+#                    db: Session = Depends(get_db)):
+#     logging.info(f'View sell pair={pair}, quote_asset_quantity={quote_asset_quantity}')
+#
+#     key = db.query(Key).get(key_id)
+#     if not key:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+#                             detail=f'Key with id={key_id} is not found')
+#
+#     client = await AsyncClient.create(api_key=key.api_key, api_secret=key.secret_key)
+#
+#     base_currency, quote_currency = split_pair(pair)
+#     quote_balance = get_balance(quote_currency, await client.get_account())
+#     buy_amount = min(quote_balance, quote_asset_quantity)
+#
+#     order = await client.order_market_buy(symbol=pair, quoteOrderQty=float_to_str(buy_amount))
+#
+#     await client.close_connection()
+#
+#     fills = order['fills'][0]
+#
+#     return {
+#         'message': 'Successfully sell',
+#         'base_asset_bought': float(fills['qty']) - float(fills['commission']),
+#         'quote_asset_sold': float(order['cummulativeQuoteQty']),
+#         'price': float(fills['price'])
+#     }
+#
+#
+# @data_api_router.post('/sell/{pair}')
+# async def sell_pair(pair: str,
+#                     key_id: int = Form(...),
+#                     quote_asset_quantity: float = Form(...),
+#                     db: Session = Depends(get_db)):
+#     logging.info(f'View sell pair={pair}, quote_asset_quantity={quote_asset_quantity}')
+#
+#     key = db.query(Key).get(key_id)
+#     if not key:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+#                             detail=f'Key with id={key_id} is not found')
+#
+#     client = await AsyncClient.create(api_key=key.api_key, api_secret=key.secret_key)
+#
+#     base_currency, quote_currency = split_pair(pair)
+#     base_balance = get_balance(base_currency, await client.get_account())
+#
+#     try:
+#         order = await client.order_market_sell(symbol=pair, quoteOrderQty=float_to_str(quote_asset_quantity))
+#     except BinanceAPIException:
+#         order = await client.order_market_sell(symbol=pair, quantity=float_to_str(base_balance))
+#
+#     await client.close_connection()
+#
+#     fills = order['fills'][0]
+#
+#     return {
+#         'message': 'Successfully sell',
+#         'base_asset_sold': float(fills['qty']),
+#         'quote_asset_bought': float(order['cummulativeQuoteQty']) - float(fills['commission']),
+#         'price': float(fills['price'])
+#     }

@@ -7,7 +7,7 @@ from config.settings import SessionLocal
 from models.models_ import Bot, Transaction
 from algorithms.bots.base_enums import BotAction, BotStatus, BotMoneyMode, ReturnType
 from exceptions.bot_exceptions import BotIsNotRunningError, BotModeIsNotConfiguredError
-from api.data_api.views import buy_pair, sell_pair
+from api.data_api.buy_sell import buy_pair, sell_pair
 
 
 class BotBase(ABC):
