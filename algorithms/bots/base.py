@@ -84,7 +84,7 @@ class BotBase(ABC):
             price=price,
             # todo: add real amount if real trade
             amount=amount,
-            type=BotAction.BUY,
+            type=BotAction.SELL,
             money_mode=self.money_mode
         )
         db = SessionLocal()
