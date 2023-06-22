@@ -35,8 +35,11 @@ class BotBase(ABC):
     def step(self, new_price: float) -> None:
         pass
 
-    def recalculate_total_balance(self, price: float):
-        self.total_balance_in_quote_asset = self.quote_asset_balance + self.base_asset_balance / price
+    def recalculate_total_balance(self, price: float = None):
+        if price:
+            self.total_balance_in_quote_asset = self.quote_asset_balance + self.base_asset_balance / price
+        else:
+            self.total_balance_in_quote_asset = self.quote_asset_balance
 
     def stop(self) -> None:
         # Set status in bot
@@ -118,7 +121,7 @@ class BotBase(ABC):
         db.add(transaction)
         db.commit()
 
-    def verbose_price(self, price: float):
+    def verbose_total_balance(self, price: float):
         money = self.base_asset_balance / price + self.quote_asset_balance
 
         logging.info(f'Current balance for bot={self}:', money)

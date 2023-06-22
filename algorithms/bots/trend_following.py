@@ -39,7 +39,7 @@ class TrendFollowingBot(BotBase):
         self.min_level = min_level
         self.max_level = max_level
         self.max_money_to_invest = max_money_to_invest
-        self.money_to_invest = max_money_to_invest
+        self.quote_asset_balance = max_money_to_invest
         self.money_mode = money_mode
         self.return_type = return_type
         self.slow_window = slow_window
@@ -52,6 +52,7 @@ class TrendFollowingBot(BotBase):
         self.oldest_slow_price = None
         self.oldest_fast_price = None
 
+        self.recalculate_total_balance()
         self.start()
 
     @staticmethod
@@ -113,7 +114,7 @@ class TrendFollowingBot(BotBase):
             self.sell(self.max_money_to_invest, new_price)
             self.invested_in_pair = False
 
-        self.verbose_price(new_price)
+        self.verbose_total_balance(new_price)
 
     def score(self, df: pa.typing.DataFrame[ScoreDataFrameSchema], fast: int, slow: int) -> float:
         self.check_sma_values(fast, slow, len(df))
