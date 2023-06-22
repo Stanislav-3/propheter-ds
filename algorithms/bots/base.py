@@ -28,6 +28,10 @@ class BotBase(ABC):
     def start(self) -> None:
         pass
 
+    @abstractmethod
+    def step(self, new_price: float) -> None:
+        pass
+
     def stop(self) -> None:
         # Set status in bot
         self.status = BotStatus.STOPPED
@@ -37,10 +41,6 @@ class BotBase(ABC):
         bot = db.query(Bot).get(self.id)
         bot.status = BotStatus.STOPPED
         db.commit()
-
-    @abstractmethod
-    def step(self, new_price: float) -> None:
-        pass
 
     def buy(self, amount: float, price: float):
         logging.info(f'Buy on {self.pair} with price={price} by bot={self}')
@@ -101,6 +101,8 @@ class BotBase(ABC):
             logging.info(f'Current paper balance for bot={self}:', money)
 
     def set_loading(self):
+        logging.info(f'Set loading for bot {self}')
+
         # Set status in bot
         self.status = BotStatus.LOADING
 
@@ -111,6 +113,8 @@ class BotBase(ABC):
         db.commit()
 
     def set_running(self):
+        logging.info(f'Set running for bot {self}')
+
         # Set status in bot
         self.status = BotStatus.RUNNING
 

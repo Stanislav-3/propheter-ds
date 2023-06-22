@@ -23,6 +23,19 @@ from api.bot.db_stuff import remove_klines_from_db, remove_pair_and_klines_from_
 bot_router = APIRouter(prefix='/bot')
 
 
+async def get_bot_pair_id_and_name_from_db(bot_id: int, db: Session) -> (int, str):
+    logging.info(f'Try to get pair of bot with id={bot_id} from db')
+
+    bot = db.query(Bot).get(bot_id)
+    if not bot:
+        logging.info(f'Bot with id={bot_id} is not found in the db')
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=f'Bot with id={bot_id} is not found in db.')
+
+    pair_id = bot.stock_id
+    return pair_id, db.query(Stock).filter(Stock.id == pair_id).first().name
+
+
 @bot_router.get('/get-bot-status/{bot_id}')
 async def get_bot_status(bot_id: int, db: Session = Depends(get_db)):
     bot = db.query(Bot).get(bot_id)
@@ -128,17 +141,10 @@ async def create_bot(request: Request,
 async def start_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = Depends(get_db)):
     logging.info(f'View start bot with id={bot_id}')
 
-    # Start bot in db
-    bot = db.query(Bot).get(bot_id)
-    if not bot:
-        logging.info(f'Bot with id={bot_id} is not found in the db')
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail=f'Bot with id={bot_id} is not found in db. \n'
-                                   f'In Pool bot={pool.get_bot(bot_id)}')
-    pair_id = bot.stock_id
+    # Get pair id
+    pair_id, pair = await get_bot_pair_id_and_name_from_db(bot_id, db)
 
     # Start bot in a pool
-    pair = db.query(Stock).filter(Stock.id == pair_id).first().name
     is_started = pool.start_bot(pair, bot_id)
     if not is_started:
         logging.info(f'Bot with id={bot_id} is not found in the pool')
@@ -163,18 +169,10 @@ async def start_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = D
 async def stop_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = Depends(get_db)):
     logging.info(f'View stop bot with id={bot_id}')
 
-    # Stop bot in db
-    bot = db.query(Bot).get(bot_id)
-    if not bot:
-        logging.info(f'Bot with id={bot_id} is not found in the db')
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail=f'Bot with id={bot_id} is not found in db. \n'
-                                   f'In Pool bot={pool.get_bot(bot_id)}')
-    pair_id = bot.stock_id
-    logging.info(f'Successfully stopped bot with id={bot_id} in db')
+    # Get bot pair
+    pair_id, pair = await get_bot_pair_id_and_name_from_db(bot_id, db)
 
     # Stop bot in a pool
-    pair = db.query(Stock).filter(Stock.id == pair_id).first().name
     is_stopped = pool.stop_bot(pair, bot_id)
     if not is_stopped:
         logging.info(f'Bot with id={bot_id} is not found in the pool')
@@ -226,8 +224,6 @@ async def delete_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = 
         await unregister_pair_on_data_api(pair)
         await remove_pair_and_klines_from_db(pair, db)
         logging.info(f'Successfully unregister pair with id={pair_id} name={pair}')
-    else:
-        logging.info(f'Did not try to unregister pair with id={pair_id}')
 
     logging.info(f'Successfully deleted bot with id={bot_id}')
     return {'message': f'Successfully deleted bot with id={bot_id}'}

@@ -76,3 +76,10 @@ async def remove_pair_and_klines_from_db(stock_name: str, db: Session) -> None:
     # db.query(Kline).filter(Kline.stock_id == pair.id).delete()
     db.delete(pair)
     db.commit()
+
+
+async def remove_transactions_from_db(bot_id: int, db: Session) -> None:
+    logging.info(f'Remove transactions from db of bot with id={bot_id}')
+
+    db.query(Transaction).filter(Transaction.bot_id == bot_id).delete()
+    db.commit()
