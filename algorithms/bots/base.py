@@ -23,7 +23,7 @@ class BotBase(ABC):
         self.base_asset_balance = 0
         self.total_balance_in_quote_asset = 0
 
-        self.commission = 0.001
+        self.commission = 0.000
 
     def __repr__(self):
         return f'Name = {self.__class__.__name__}, id={self.id}'
