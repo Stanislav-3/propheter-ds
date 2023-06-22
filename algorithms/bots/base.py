@@ -17,9 +17,8 @@ class BotBase(ABC):
         self.pair = None
         self.invested_in_pair = False
 
-        self.bot_balance = 0
-        self.money_invested = 0
-        self.money_in_pair = 0
+        self.quote_asset_balance = 0
+        self.base_asset_balance = 0
 
     def __repr__(self):
         return f'Name = {self.__class__.__name__}, id={self.id}'
