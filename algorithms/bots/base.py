@@ -38,7 +38,7 @@ class BotBase(ABC):
 
     def recalculate_total_balance(self, price: float = None):
         if price:
-            self.total_balance_in_quote_asset = self.quote_asset_balance + self.base_asset_balance / price
+            self.total_balance_in_quote_asset = self.quote_asset_balance + self.base_asset_balance * price
         else:
             self.total_balance_in_quote_asset = self.quote_asset_balance
 
