@@ -5,5 +5,7 @@ venv/
 .DS_Store
 .env
 
-test.ipynb
+*.ipynb
 *.log
+*.json
+test.py

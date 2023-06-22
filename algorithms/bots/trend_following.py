@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import pandera as pa
 from typing import Sequence, NamedTuple
+from copy import copy
 
 from algorithms.bots.base import BotBase, ReturnType, BotMoneyMode, BotStatus
 from algorithms.preprocessing.returns import (
@@ -49,8 +50,8 @@ class TrendFollowingBot(BotBase):
 
         self.slow_sma = None
         self.fast_sma = None
-        self.oldest_slow_price = None
-        self.oldest_fast_price = None
+        self.slow_window_prices = None
+        self.fast_window_prices = None
 
         self.recalculate_total_balance()
         self.start()
@@ -90,13 +91,10 @@ class TrendFollowingBot(BotBase):
         self.loading_prices.append(new_price)
         
         if len(self.loading_prices) != self.slow_window:
-            return 
+            return
 
-        self.slow_sma = np.mean(self.loading_prices)
-        self.fast_sma = np.mean(self.loading_prices[-self.fast_window:])
-
-        self.oldest_slow_price = self.loading_prices[-self.slow_window]
-        self.oldest_fast_price = self.loading_prices[-self.fast_window]
+        self.slow_window_prices = copy(self.loading_prices)
+        self.fast_window_prices = copy(self.loading_prices[-self.fast_window:])
 
         self.loading_prices.clear()
         self.set_running()
@@ -104,8 +102,14 @@ class TrendFollowingBot(BotBase):
     def running_step(self, new_price):
         logging.info(f'Running step for bot={self}')
 
-        self.slow_sma = (self.slow_sma * self.slow_window - self.oldest_slow_price + new_price) / self.slow_window
-        self.fast_sma = (self.fast_sma * self.fast_window - self.oldest_fast_price + new_price) / self.fast_window
+        self.slow_window_prices.pop(0)
+        self.fast_window_prices.pop(0)
+
+        self.slow_window_prices.append(new_price)
+        self.fast_window_prices.append(new_price)
+
+        self.slow_sma = np.mean(self.slow_window_prices)
+        self.fast_sma = np.mean(self.fast_window_prices)
 
         if not self.invested_in_pair and self.fast_sma > self.slow_sma:
             self.buy(self.max_money_to_invest, new_price)
