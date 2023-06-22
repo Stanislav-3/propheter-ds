@@ -4,8 +4,6 @@ import pandas as pd
 import pandera as pa
 from typing import Sequence, NamedTuple
 
-from config.settings import SessionLocal
-from models.models_ import Bot
 from algorithms.bots.base import BotBase, ReturnType, BotMoneyMode, BotStatus
 from algorithms.preprocessing.returns import (
     get_log_returns, get_returns, from_log_returns_to_factor, from_returns_to_factor
@@ -66,7 +64,7 @@ class TrendFollowingBot(BotBase):
             raise ValueError(f'Too high value of slow MA. It should be less than {upper_bound}')
 
     def start(self) -> None:
-        self.status = BotStatus.LOADING
+        self.set_loading()
 
         if self.slow_window and self.fast_window:
             self.check_sma_values(self.slow_window, self.fast_window, 200)
@@ -100,13 +98,7 @@ class TrendFollowingBot(BotBase):
         self.oldest_fast_price = self.loading_prices[-self.fast_window]
 
         self.loading_prices.clear()
-        self.status = BotStatus.RUNNING
-
-        # Set status to running in db
-        db = SessionLocal()
-        bot = db.query(Bot).get(self.id)
-        bot.status = BotStatus.RUNNING
-        db.commit()
+        self.set_running()
 
     def running_step(self, new_price):
         logging.info(f'Running step for bot={self}')

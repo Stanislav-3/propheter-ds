@@ -1,9 +1,10 @@
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-
 import requests
 
+from config.settings import SessionLocal
+from models.models_ import Bot
 from exceptions.bot_exceptions import BotIsNotRunningError, BotModeIsNotConfiguredError
 from typing import NamedTuple
 
@@ -53,7 +54,14 @@ class BotBase(ABC):
         pass
 
     def stop(self) -> None:
+        # Set status in bot
         self.status = BotStatus.STOPPED
+
+        # Set status in db
+        db = SessionLocal()
+        bot = db.query(Bot).get(self.id)
+        bot.status = BotStatus.STOPPED
+        db.commit()
 
     @abstractmethod
     def step(self, new_price: float) -> None:
@@ -96,5 +104,23 @@ class BotBase(ABC):
 
             logging.info(f'Current paper balance for bot={self}:', money)
 
+    def set_loading(self):
+        # Set status in bot
+        self.status = BotStatus.LOADING
+
+        # Set status in db
+        db = SessionLocal()
+        bot = db.query(Bot).get(self.id)
+        bot.status = BotStatus.LOADING
+        db.commit()
+
     def set_running(self):
-        pass
+        # Set status in bot
+        self.status = BotStatus.RUNNING
+
+        # Set status in db
+        db = SessionLocal()
+        bot = db.query(Bot).get(self.id)
+        bot.status = BotStatus.RUNNING
+        db.commit()
+

@@ -86,7 +86,7 @@ class GridBot(BotBase):
 
     def start(self) -> None:
         self.check_parameters()
-        self.status = BotStatus.LOADING
+        self.set_loading()
 
     def step(self, new_price: float) -> None:
         logging.info(f'Step for bot={self}')
@@ -99,7 +99,7 @@ class GridBot(BotBase):
     def loading_step(self, new_price):
         logging.info(f'Loading step for bot={self}')
         self.levels = self.get_levels_for_adjusted_grid(new_price)
-        self.status = BotStatus.RUNNING
+        self.set_running()
 
     def running_step(self, new_price):
         logging.info(f'Running step for bot={self}')

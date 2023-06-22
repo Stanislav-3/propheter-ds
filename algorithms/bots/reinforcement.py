@@ -216,7 +216,7 @@ class ReinforcementBot(BotBase):
         self.start()
 
     def start(self) -> None:
-        self.status = BotStatus.LOADING
+        self.set_loading()
 
         response = requests.get(f'{DATA_API_URI}/get-tick-prices/{self.pair}')
         log_returns = get_log_returns(response.json()['prices'])
@@ -258,7 +258,7 @@ class ReinforcementBot(BotBase):
 
             logging.info(f"Bot:{self}, eps: {episode + 1}/{self.num_episodes}, train: {train_reward:.5f}, test: {test_reward:.5f}")
 
-        self.status = BotStatus.RUNNING
+        self.set_running()
 
     def step(self, new_price) -> None:
         if self.status != BotStatus.RUNNING:

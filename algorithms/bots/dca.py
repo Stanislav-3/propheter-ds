@@ -37,7 +37,7 @@ class DCABot(BotBase):
 
     def start(self) -> None:
         self.next_investment_time = time.time()
-        self.status = BotStatus.RUNNING
+        self.set_running()
 
     def step(self, new_price) -> None:
         if self.status != BotStatus.RUNNING:

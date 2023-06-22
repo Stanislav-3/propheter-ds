@@ -135,9 +135,6 @@ async def start_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = D
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail=f'Bot with id={bot_id} is not found in db. \n'
                                    f'In Pool bot={pool.get_bot(bot_id)}')
-
-    bot.status = BotStatus.LOADING
-    db.commit()
     pair_id = bot.stock_id
 
     # Start bot in a pool
@@ -173,8 +170,6 @@ async def stop_bot(bot_id: int, pool: Pool = Depends(get_pool), db: Session = De
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail=f'Bot with id={bot_id} is not found in db. \n'
                                    f'In Pool bot={pool.get_bot(bot_id)}')
-    bot.status = BotStatus.STOPPED
-    db.commit()
     pair_id = bot.stock_id
     logging.info(f'Successfully stopped bot with id={bot_id} in db')
 
