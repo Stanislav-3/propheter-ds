@@ -24,15 +24,38 @@ bot_router = APIRouter(prefix='/bot')
 
 
 @bot_router.get('/get-bot-status/{bot_id}')
-def get_bot_status(bot_id: int, db: Session = Depends(get_db)):
+async def get_bot_status(bot_id: int, db: Session = Depends(get_db)):
     bot = db.query(Bot).get(bot_id)
     if bot is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Bot with id={bot_id} is not found in db')
 
     return {
         'bot_status': bot.status,
-        'message': f'Bot status for bot {None} is successfully obtained'
+        'message': f'Bot status for bot with id={bot_id} is successfully obtained'
     }
+
+
+@bot_router.get('/get-bot-parameters-schema/{bot_id}')
+async def get_bot_parameters_schema(bot_id: int, db: Session = Depends(get_db)):
+    bot = db.query(Bot).get(bot_id)
+    if bot is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Bot with id={bot_id} is not found in db')
+
+    bot_type = db.query(BotType).get(bot.bot_type_id)
+
+    return {
+        'bot_parameters_schema': bot_type.parameters_schema,
+        'message': f'Bot parameters for bot with id={bot_id} is successfully obtained'
+    }
+
+
+@bot_router.get('/get-bot-transactions/{bot_id}')
+async def get_bot_transactions(bot_id: int, db: Session = Depends(get_db)):
+    transactions = db.query(Transaction)\
+        .filter(Transaction.bot_id == bot_id)\
+        .order_by(Transaction.date).all()
+
+    return {'transactions': transactions}
 
 
 @bot_router.put('/edit/{bot_id}')
