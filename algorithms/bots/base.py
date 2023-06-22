@@ -6,19 +6,22 @@ from config.settings import SessionLocal
 from models.models_ import Bot, Transaction
 from algorithms.bots.base_enums import BotAction, BotStatus, BotMoneyMode, ReturnType
 from exceptions.bot_exceptions import BotIsNotRunningError, BotModeIsNotConfiguredError
+from api.data_api.views import buy_pair, sell_pair
 
 
 class BotBase(ABC):
     def __init__(self):
         self.id = None
+        self.key_id = None
         self.status = BotStatus.LOADING
         self.money_mode = BotMoneyMode.NOT_CONFIGURED
-        self.paper_money = 1000
         self.pair = None
         self.invested_in_pair = False
 
         self.quote_asset_balance = 0
         self.base_asset_balance = 0
+
+        self.commission = 0.001
 
     def __repr__(self):
         return f'Name = {self.__class__.__name__}, id={self.id}'
@@ -41,63 +44,72 @@ class BotBase(ABC):
         bot.status = BotStatus.STOPPED
         db.commit()
 
-    def buy(self, amount: float, price: float):
+    def buy(self, quote_amount: float, price: float):
         logging.info(f'Buy on {self.pair} with price={price} by bot={self}')
+        db = SessionLocal()
 
-        if self.money_mode == BotMoneyMode.PAPER:
-            self.paper_money *= price
+        if self.money_mode == BotMoneyMode.REAL:
+            order = await buy_pair(self.pair, self.key_id, quote_asset_quantity=quote_amount, db=db)
+            price = order['price']
+            base_asset_bought = order['base_asset_bought']
+            quote_asset_sold = order['quote_asset_sold']
+        else:
+            # Paper money
+            base_asset_bought = quote_amount / price * (1 - self.commission)
+            quote_asset_sold = quote_amount
 
-        elif self.money_mode == BotMoneyMode.REAL:
-            # todo: add transaction to db an request to data api
-            pass
+        # Update balances
+        self.base_asset_balance += base_asset_bought
+        self.quote_asset_balance -= quote_asset_sold
 
         # Add transaction to db
         transaction = Transaction(
             bot_id=self.id,
             date=datetime.now(),
-            # todo: add real price if real trade
             price=price,
-            # todo: add real amount if real trade
-            amount=amount,
+            base_asset_amount=base_asset_bought,
+            quote_asset_amount=quote_asset_sold,
             type=BotAction.BUY,
             money_mode=self.money_mode
         )
-        db = SessionLocal()
         db.add(transaction)
         db.commit()
 
-    def sell(self, amount: float, price: float):
+    def sell(self, quote_amount: float, price: float):
         logging.info(f'Sell on {self.pair} with price={price} by bot={self}')
+        db = SessionLocal()
 
-        if self.money_mode == BotMoneyMode.PAPER:
-            self.paper_money /= price
-        elif self.money_mode == BotMoneyMode.REAL:
-            # todo: add transaction to db an request to data api
-            pass
+        if self.money_mode == BotMoneyMode.REAL:
+            order = await sell_pair(self.pair, self.key_id, quote_asset_quantity=quote_amount, db=db)
+            price = order['price']
+            base_asset_sold = order['base_asset_sold']
+            quote_asset_bought = order['quote_asset_bought']
+        else:
+            # Paper money
+            base_asset_sold = quote_amount / price
+            quote_asset_bought = quote_amount * (1 - self.commission)
+
+        # Update balances
+        self.base_asset_balance -= base_asset_sold
+        self.quote_asset_balance += quote_asset_bought
 
         # Add transaction to db
         transaction = Transaction(
             bot_id=self.id,
             date=datetime.now(),
-            # todo: add real price if real trade
             price=price,
-            # todo: add real amount if real trade
-            amount=amount,
+            base_asset_amount=base_asset_sold,
+            quote_asset_amount=quote_asset_bought,
             type=BotAction.SELL,
             money_mode=self.money_mode
         )
-        db = SessionLocal()
         db.add(transaction)
         db.commit()
 
     def verbose_price(self, price: float):
-        if self.money_mode == BotMoneyMode.PAPER:
-            if self.invested_in_pair:
-                money = self.paper_money / price
-            else:
-                money = self.paper_money
+        money = self.base_asset_balance * price + self.quote_asset_balance
 
-            logging.info(f'Current paper balance for bot={self}:', money)
+        logging.info(f'Current balance for bot={self}:', money)
 
     def set_loading(self):
         logging.info(f'Set loading for bot {self}')

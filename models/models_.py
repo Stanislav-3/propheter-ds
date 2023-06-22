@@ -128,6 +128,7 @@ class Transaction(Base):
 
     date = Column(DateTime())
     price = Column(DECIMAL(precision=8, scale=2))
-    amount = Column(DECIMAL(precision=10, scale=2))
+    base_asset_amount = Column(DECIMAL(precision=10, scale=2))
+    quote_asset_amount = Column(DECIMAL(precision=10, scale=2))
     type = Column(Enum(BotAction))
     money_mode = Column(Enum(BotMoneyMode))
