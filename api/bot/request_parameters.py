@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 from pydantic import BaseModel
 
 from algorithms.bots.base import BotMoneyMode, ReturnType
@@ -58,8 +58,17 @@ def parse_part_of_parameters(bot_type_name: str, body: dict) -> dict:
         if value_type is None:
             raise ValueError(f'Incorrect parameters. There is no parameter {key} in BotParameters')
 
-        parsed_body[key] = value_type(value)
+        try:
+            # if Optional argument
+            if value_type.__origin__ is Union:
+                # if NoneType
+                if value == 'None' or value is None:
+                    parsed_body[key] = None
+                else:
+                    # if not a NonType
+                    parsed_body[key] = value_type.__args__[0](value)
+        except AttributeError:
+            # if not optional argument
+            parsed_body[key] = value_type(value)
 
     return parsed_body
-
-
