@@ -35,7 +35,7 @@ class Bot(Base):
 
     stock_id = Column(ForeignKey('Stocks.id', ondelete='CASCADE'))
     bot_type_id = Column(ForeignKey('BotTypes.id', ondelete='CASCADE'))
-    key_id = Column(ForeignKey('Keys.id', ondelete='CASCADE'), nullable=True)
+    key_id = Column(ForeignKey('Keys.id'), nullable=True)
 
     status = Column(Enum(BotStatus))
     parameters = Column(mutable_json_type(dbtype=JSONB, nested=True))
