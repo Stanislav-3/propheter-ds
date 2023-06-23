@@ -4,6 +4,7 @@ from enum import Enum
 from algorithms.bots.base import BotBase, BotMoneyMode, ReturnType, BotStatus
 from algorithms.bots.base_enums import InvestmentIntervalScale
 
+
 class DCABot(BotBase):
     def __init__(self,
                  id: int,
@@ -18,6 +19,7 @@ class DCABot(BotBase):
                  investment_interval: int,
                  investment_interval_scale: InvestmentIntervalScale):
         super().__init__()
+        self.id = id
         self.key_id = key_id
         self.pair = pair
         self.money_mode = money_mode
