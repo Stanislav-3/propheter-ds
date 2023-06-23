@@ -6,6 +6,7 @@ from algorithms.bots.base_enums import InvestmentIntervalScale
 
 class DCABot(BotBase):
     def __init__(self,
+                 id: int,
                  key_id: int,
                  pair: str,
                  min_level: float,
