@@ -35,7 +35,11 @@ class TrendFollowingBot(BotBase):
                  money_mode: BotMoneyMode = None,
                  return_type: ReturnType = None,
                  slow_window: int = None,
-                 fast_window: int = None):
+                 fast_window: int = None,
+                 fast_min: int = None,
+                 fast_max: int = None,
+                 slow_max: int = None,
+                 fast_slow_min_delta: int = None):
         super().__init__()
         self.id = id
         self.key_id = key_id
