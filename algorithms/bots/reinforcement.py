@@ -219,14 +219,12 @@ class ReinforcementBot(BotBase):
         self.set_loading()
 
         response = requests.get(f'{DATA_API_URI}/api/get-tick-prices/{self.pair}')
-        logging.info(response)
-        logging.info(response.json())
         log_returns = get_log_returns(response.json()['prices'])
 
         # Prepare data
         data = pd.DataFrame({
             'LogReturn': log_returns,
-            'LogReturnShifted': log_returns.shift(1)
+            'LogReturnShifted': pd.Series(log_returns).shift(1).values
         })
 
         # Split into train and test
