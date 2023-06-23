@@ -29,3 +29,8 @@ class InvestmentIntervalScale(Enum):
     MINUTE = 'Minute'
     HOUR = 'Hour'
     DAY = 'Day'
+
+
+class RunningMode(Enum):
+    STATIC = 'Static'
+    DYNAMIC = 'Dynamic'

@@ -3,7 +3,8 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy_json import mutable_json_type
 
 from config.settings import Base
-from algorithms.bots.base_enums import BotMoneyMode, ReturnType, BotStatus, BotAction, InvestmentIntervalScale
+from algorithms.bots.base_enums import BotMoneyMode, ReturnType, BotStatus, \
+    BotAction, InvestmentIntervalScale, RunningMode
 
 
 class BotType(Base):
@@ -45,6 +46,7 @@ class Bot(Base):
     money_mode = Column(Enum(BotMoneyMode))
     return_type = Column(Enum(ReturnType))
     investment_interval_scale = Column(Enum(InvestmentIntervalScale), nullable=True)
+    running_mode = Column(Enum(RunningMode), nullable=True)
 
     def __repr__(self):
         return f'id={self.id}, stock_id={self.stock_id}, bot_type_id={self.bot_type_id}, key_id={self.key_id}, ' \
