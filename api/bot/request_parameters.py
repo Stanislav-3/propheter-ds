@@ -22,6 +22,11 @@ class TrendFollowingBotParameters(BotBaseParameters):
     slow_window: Optional[int]
     fast_window: Optional[int]
 
+    fast_min: Optional[int]
+    fast_max: Optional[int]
+    slow_max: Optional[int]
+    fast_slow_min_delta: Optional[int]
+
 
 class DCABotParameters(BotBaseParameters):
     investment_money: float

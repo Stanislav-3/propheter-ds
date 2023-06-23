@@ -2,8 +2,11 @@ import logging
 import numpy as np
 import pandas as pd
 import pandera as pa
+import threading
+import requests
 from typing import Sequence, NamedTuple
 from copy import copy
+from config.settings import DATA_API_URI
 
 from algorithms.bots.base import BotBase, ReturnType, BotMoneyMode, BotStatus
 from algorithms.preprocessing.returns import (
@@ -52,6 +55,7 @@ class TrendFollowingBot(BotBase):
         self.fast_sma = None
         self.slow_window_prices = None
         self.fast_window_prices = None
+        self.is_learning = False
 
         self.recalculate_total_balance()
         self.start()
@@ -71,14 +75,26 @@ class TrendFollowingBot(BotBase):
         if self.slow_window and self.fast_window:
             self.check_sma_values(self.slow_window, self.fast_window, 200)
         else:
-            # todo: change prices
-            best_moving_windows = self.search_parameters(self.loading_prices, fast_min=1, fast_max=100,
-                                                         slow_max=150, fast_slow_min_delta=1)
-            self.slow_window = best_moving_windows.slow_window
-            self.fast_window = best_moving_windows.fast_window
+            self.is_learning = True
+            response = requests.get(f'{DATA_API_URI}/api/get-tick-prices/{self.pair}')
+            prices = response.json()['prices']
+
+            def learn():
+                best_moving_windows = self.search_parameters(prices, fast_min=1, fast_max=100,
+                                                             slow_max=150, fast_slow_min_delta=1)
+                self.slow_window = best_moving_windows.slow_window
+                self.fast_window = best_moving_windows.fast_window
+
+                self.is_learning = False
+
+            t = threading.Thread(target=learn, daemon=True)
+            t.start()
+
 
     def step(self, new_price: int) -> None:
         logging.info(f'Step for bot={self}')
+        if self.is_learning:
+            return
 
         if self.status == BotStatus.LOADING:
             self.loading_step(new_price)
