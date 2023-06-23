@@ -219,6 +219,8 @@ class ReinforcementBot(BotBase):
         self.set_loading()
 
         response = requests.get(f'{DATA_API_URI}/get-tick-prices/{self.pair}')
+        logging.info(response)
+        logging.info(response.json())
         log_returns = get_log_returns(response.json()['prices'])
 
         # Prepare data
@@ -273,4 +275,4 @@ class ReinforcementBot(BotBase):
             self.buy(self.quote_asset_balance, new_price)
         elif self.hold and action == 1:
             self.hold = False
-            self.sell(1, new_price)
+            self.sell(self.base_asset_balance * new_price, new_price)
