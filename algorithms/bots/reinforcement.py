@@ -260,8 +260,6 @@ class ReinforcementBot(BotBase):
 
                 logging.info(f"Bot:{self}, eps: {episode + 1}/{self.num_episodes}, train: {train_reward:.5f}, test: {test_reward:.5f}")
 
-                self.set_running()
-
         t = threading.Thread(target=loading_stuff, daemon=True)
         t.start()
         # self.set_running()
@@ -269,6 +267,11 @@ class ReinforcementBot(BotBase):
     def step(self, new_price) -> None:
         if self.status != BotStatus.RUNNING:
             self.last_price = new_price
+            return
+
+        if self.last_price is None:
+            self.last_price = new_price
+            self.set_running()
             return
 
         state = np.log(new_price - self.last_price)
