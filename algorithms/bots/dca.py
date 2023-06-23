@@ -25,6 +25,7 @@ class DCABot(BotBase):
         self.money_mode = money_mode
         self.return_type = return_type
 
+        self.quote_asset_balance = max_money_to_invest
         self.investment_money = investment_money
         self.investment_interval = investment_interval
         self.investment_interval_scale = investment_interval_scale
@@ -44,6 +45,10 @@ class DCABot(BotBase):
 
         # Check if it's time to invest
         if self.next_investment_time >= time.time():
+            return
+
+        if self.quote_asset_balance < self.investment_money:
+            self.stop()
             return
 
         # Update next investment date and invest in pair
