@@ -23,3 +23,9 @@ class BotAction(Enum):
     HOLD = 'Hold'
     SELL = 'Sell'
     DO_NOTHING = 'Do nothing'
+
+
+class InvestmentIntervalScale(Enum):
+    MINUTE = 'Minute'
+    HOUR = 'Hour'
+    DAY = 'Day'

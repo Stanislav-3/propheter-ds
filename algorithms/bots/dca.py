@@ -2,13 +2,7 @@ import time
 from enum import Enum
 
 from algorithms.bots.base import BotBase, BotMoneyMode, ReturnType, BotStatus
-
-
-class InvestmentIntervalScale(Enum):
-    MINUTE = 'Minute'
-    HOUR = 'Hour'
-    DAY = 'Day'
-
+from algorithms.bots.base_enums import InvestmentIntervalScale
 
 class DCABot(BotBase):
     def __init__(self,

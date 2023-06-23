@@ -16,6 +16,12 @@ async def add_bot_to_db(bot_type_name: Literal['trend-following-bot', 'dca-bot',
     bot_type_id = db.query(BotType).filter(BotType.name == bot_type_name).first().id
     stock_id = db.query(Stock).filter(Stock.name == parameters['pair']).first().id
 
+    # for dca bot
+    investment_interval_scale = None
+    for k, v in parameters.items():
+        if k == 'investment_interval_scale':
+            investment_interval_scale = v
+
     bot = Bot(stock_id=stock_id,
               bot_type_id=bot_type_id,
               key_id=parameters['key_id'],
@@ -27,7 +33,9 @@ async def add_bot_to_db(bot_type_name: Literal['trend-following-bot', 'dca-bot',
               money_mode=parameters['money_mode'],
               parameters={
                   k: v for k, v in parameters.items() if k not in BotBaseParameters.__annotations__
-              })
+                                                         and k != 'investment_interval_scale'
+              },
+              investment_interval_scale=investment_interval_scale)
 
     db.add(bot)
     db.commit()
