@@ -8,6 +8,8 @@ class DCABot(BotBase):
     def __init__(self,
                  key_id: int,
                  pair: str,
+                 min_level: float,
+                 max_level: float,
                  max_money_to_invest: float,
                  money_mode: BotMoneyMode,
                  return_type: ReturnType,
