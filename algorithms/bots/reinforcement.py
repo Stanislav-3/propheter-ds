@@ -262,7 +262,7 @@ class ReinforcementBot(BotBase):
 
                 self.set_running()
 
-        t = threading.Thread(target=loading_stuff)
+        t = threading.Thread(target=loading_stuff, daemon=True)
         t.start()
         # self.set_running()
 
