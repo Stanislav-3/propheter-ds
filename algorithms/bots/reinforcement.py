@@ -218,7 +218,7 @@ class ReinforcementBot(BotBase):
     def start(self) -> None:
         self.set_loading()
 
-        response = requests.get(f'{DATA_API_URI}/get-tick-prices/{self.pair}')
+        response = requests.get(f'{DATA_API_URI}/api/get-tick-prices/{self.pair}')
         logging.info(response)
         logging.info(response.json())
         log_returns = get_log_returns(response.json()['prices'])
