@@ -3,6 +3,7 @@ import logging
 import numpy as np
 import pandas as pd
 import requests
+import threading
 
 from config.settings import DATA_API_URI
 from algorithms.bots.base import BotBase, BotStatus, BotMoneyMode, ReturnType
@@ -218,46 +219,50 @@ class ReinforcementBot(BotBase):
     def start(self) -> None:
         self.set_loading()
 
-        response = requests.get(f'{DATA_API_URI}/api/get-tick-prices/{self.pair}')
-        log_returns = get_log_returns(response.json()['prices'])
+        def loading_stuff():
+            response = requests.get(f'{DATA_API_URI}/api/get-tick-prices/{self.pair}')
+            log_returns = get_log_returns(response.json()['prices'])
 
-        # Prepare data
-        data = pd.DataFrame({
-            'LogReturn': log_returns,
-            'LogReturnShifted': pd.Series(log_returns).shift(1).values
-        })
+            # Prepare data
+            data = pd.DataFrame({
+                'LogReturn': log_returns,
+                'LogReturnShifted': pd.Series(log_returns).shift(1).values
+            })
 
-        # Split into train and test
-        n_test = int(len(data) * self.test_ratio)
-        self.train_data = data.iloc[:-n_test]
-        self.test_data = data.iloc[-n_test:]
+            # Split into train and test
+            n_test = int(len(data) * self.test_ratio)
+            self.train_data = data.iloc[:-n_test]
+            self.test_data = data.iloc[-n_test:]
 
-        # Prepare environments
-        self.train_env = Env(self.train_data)
-        self.test_env = Env(self.test_data)
+            # Prepare environments
+            self.train_env = Env(self.train_data)
+            self.test_env = Env(self.test_data)
 
-        # Prepare agent & StateMapper
-        action_size = len(self.train_env.action_space)
-        self.state_mapper = StateMapper(self.train_env)
-        self.agent = Agent(action_size, self.state_mapper)
+            # Prepare agent & StateMapper
+            action_size = len(self.train_env.action_space)
+            self.state_mapper = StateMapper(self.train_env)
+            self.agent = Agent(action_size, self.state_mapper)
 
-        # Prepare rewards
-        train_rewards = np.empty(self.num_episodes)
-        test_rewards = np.empty(self.num_episodes)
+            # Prepare rewards
+            train_rewards = np.empty(self.num_episodes)
+            test_rewards = np.empty(self.num_episodes)
 
-        for episode in range(self.num_episodes):
-            train_reward = play_one_episode(self.agent, self.train_env, is_train=True)
-            train_rewards[episode] = train_reward
+            for episode in range(self.num_episodes):
+                train_reward = play_one_episode(self.agent, self.train_env, is_train=True)
+                train_rewards[episode] = train_reward
 
-            # test on the test set
-            tmp_epsilon = self.agent.epsilon
-            self.agent.epsilon = 0.
-            test_reward = play_one_episode(self.agent, self.test_env, is_train=False)
-            self.agent.epsilon = tmp_epsilon
-            test_rewards[episode] = test_reward
+                # test on the test set
+                tmp_epsilon = self.agent.epsilon
+                self.agent.epsilon = 0.
+                test_reward = play_one_episode(self.agent, self.test_env, is_train=False)
+                self.agent.epsilon = tmp_epsilon
+                test_rewards[episode] = test_reward
 
-            logging.info(f"Bot:{self}, eps: {episode + 1}/{self.num_episodes}, train: {train_reward:.5f}, test: {test_reward:.5f}")
+                logging.info(f"Bot:{self}, eps: {episode + 1}/{self.num_episodes}, train: {train_reward:.5f}, test: {test_reward:.5f}")
 
+        t = threading.Thread(target=loading_stuff)
+        t.start()
+        t.join()
         self.set_running()
 
     def step(self, new_price) -> None:
